@@ -1,0 +1,67 @@
+version: '3.3'
+
+services:
+  omnixchannel-web:
+    container_name: omnixchannel-web
+    image: omnixchannel:v2
+    #build:
+      #context: .
+      #dockerfile: docker/Dockerfile
+    ports:
+      - "8008:80"
+    volumes:
+      - ./src:/usr/share/nginx/html/
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+    restart: unless-stopped
+    #environment:
+      #- NGINX_HOST=localhost
+      #- NGINX_PORT=80
+
+    depends_on:
+      - omnixchannel-backend
+    networks:
+      - web-network
+    # Opcional: ativar healthcheck
+    #healthcheck:
+      #test: ["CMD", "wget", "--spider", "http://localhost"]
+      #interval: 10s
+      #timeout: 5s
+      #retries: 3
+      #start_period: 40s
+
+  omnixchannel-backend:
+    container_name: omnixchannel-backend
+    #image: omnixchannelbackend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - TO_EMAIL=${TO_EMAIL}
+      - PORT=3000
+    volumes:
+      - .env:/app/.env  # opcional: para .env em produção
+      #- ./backend:/app
+    restart: unless-stopped
+    networks:
+      - web-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Redes personalizadas para isolamento
+networks:
+  web-network:
+    driver: bridge
+
+# Volumes (opcional para logs ou cache persistente)
+# volumes:
+#   nginx_data:

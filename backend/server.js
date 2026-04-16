@@ -1,215 +1,207 @@
-import 'dotenv/config';
-import express from 'express';
-import helmet from 'helmet';
-import cors from 'cors';
-import morgan from 'morgan';
-import { createClient } from '@supabase/supabase-js';
+// server.js
+//require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
+const nodemailer = require('nodemailer');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
-const port = Number(process.env.PORT || 3000);
+app.set("trust proxy", 1);
+const PORT = process.env.PORT || 3000;
 
-const requiredEnv = [
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'ADMIN_API_TOKEN'
-];
+// ======================
+// MIDDLEWARES
+// ======================
 
-const missingEnv = requiredEnv.filter(key => !process.env[key]);
-if (missingEnv.length > 0) {
-  // eslint-disable-next-line no-console
-  console.warn(`Variáveis ausentes: ${missingEnv.join(', ')}. Algumas rotas falharão até configurar o ambiente.`);
-}
+// Middleware para CORS (aplicado a todas as rotas)
+app.use((req, res, next) => {
+  const allowedOrigin = process.env.FRONTEND_URL || 'https://omnixchannel.conectxip.cloud';
+  res.header('Access-Control-Allow-Origin', allowedOrigin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // Responder imediatamente a requisições OPTIONS (preflight)
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || 'https://invalid.local',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || 'invalid'
-);
+// Body parser para JSON
+app.use(bodyParser.json({ limit: '10mb' }));
 
-app.set('trust proxy', 1);
-app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*' }));
-app.use(express.json({ limit: '200kb' }));
-app.use(morgan('combined'));
+// ======================
+// RATE LIMITING (com CORS incluso no erro)
+// ======================
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // 5 tentativas por IP
+  message: {
+    error: 'Muitas requisições. Tente novamente em 15 minutos.',
+    code: 'TOO_MANY_REQUESTS'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    // Garante que o erro 429 também tenha os headers de CORS
+    const allowedOrigin = process.env.FRONTEND_URL || 'https://omnixchannel.conectxip.cloud';
+    res.header('Access-Control-Allow-Origin', allowedOrigin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.status(options.statusCode).json(options.message);
+  }
+});
 
-function sanitizeString(value, maxLen = 200) {
-  return String(value || '').trim().replace(/[<>]/g, '').slice(0, maxLen);
-}
+// Aplica o rate limit apenas na rota de contato
+app.use('/api/contact', limiter);
 
-function isHttpsUrl(value) {
+// ======================
+// ROTAS
+// ======================
+
+// Rota de saúde
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    service: 'ConectXIP Backend - Formulário de Contato',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// Rota principal: processar formulário
+app.post('/api/contact', async (req, res) => {
+  let { nome, email, empresa, mensagem } = req.body;
+
+  // ======================
+  // VALIDAÇÃO DOS DADOS
+  // ======================
+  if (!nome || typeof nome !== 'string' || nome.trim().length < 2) {
+    return res.status(400).json({
+      success: false,
+      message: 'Nome inválido.'
+    });
+  }
+
+  if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+    return res.status(400).json({
+      success: false,
+      message: 'E-mail inválido.'
+    });
+  }
+
+  if (!mensagem || typeof mensagem !== 'string' || mensagem.trim().length < 10) {
+    return res.status(400).json({
+      success: false,
+      message: 'A mensagem deve ter pelo menos 10 caracteres.'
+    });
+  }
+
+  // Sanitização básica
+  nome = nome.trim();
+  email = email.trim();
+  empresa = (empresa || 'Não informada').trim();
+  mensagem = mensagem.trim();
+
   try {
-    const url = new URL(value);
-    return url.protocol === 'https:';
-  } catch {
-    return false;
+    // ======================
+    // CONFIGURAÇÃO DO EMAIL (Nodemailer)
+    // ======================
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: false, // true para 465, false para outros
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+      tls: {
+        rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false // Desativar apenas em dev
+      }
+    });
+
+    // Teste de conexão (opcional, pode ser removido em produção)
+    await transporter.verify();
+
+    // ======================
+    // ENVIO DO EMAIL
+    // ======================
+    await transporter.sendMail({
+      from: `"Formulário Site" <${process.env.SMTP_USER}>`,
+      to: process.env.TO_EMAIL || 'omnixchanel@gmail.com',
+      replyTo: email,
+      subject: `📞 Novo contato de ${nome} - ${empresa}`,
+      text: `
+Nova mensagem do site ConectXIP Cloud:
+
+Nome: ${nome}
+E-mail: ${email}
+Empresa: ${empresa}
+Mensagem:
+${mensagem}
+
+Recebido em: ${new Date().toLocaleString('pt-BR')}
+      `,
+      html: `
+<div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; color: white; text-align: center;">
+    <h2>📞 Novo Contato - ConectXIP Cloud</h2>
+  </div>
+  <div style="padding: 20px; line-height: 1.6;">
+    <p><strong>Nome:</strong> ${nome}</p>
+    <p><strong>E-mail:</strong> <a href="mailto:${email}" style="color: #667eea;">${email}</a></p>
+    <p><strong>Empresa:</strong> ${empresa}</p>
+    <p><strong>Mensagem:</strong></p>
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #667eea;">
+      ${mensagem.replace(/\n/g, '<br>')}
+    </div>
+    <p><strong>Recebido em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+  </div>
+  <div style="background: #f1f1f1; padding: 15px; text-align: center; font-size: 0.9em; color: #666;">
+    Este e-mail foi enviado automaticamente através do site <strong>ConectXIP Cloud</strong>.
+  </div>
+</div>
+      `
+    });
+
+    console.log(`✅ E-mail enviado com sucesso: ${nome} <${email}>`);
+    return res.json({
+      success: true,
+      message: 'Mensagem enviada com sucesso! Em breve entraremos em contato.'
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao enviar e-mail:', error);
+
+    // Em produção, não exponha detalhes do erro
+    return res.status(500).json({
+      success: false,
+      message: 'Erro ao enviar mensagem. Tente novamente mais tarde.'
+    });
   }
-}
-
-function requireAdmin(req, res, next) {
-  const token = req.header('x-admin-token');
-  if (!token || token !== process.env.ADMIN_API_TOKEN) {
-    return res.status(401).json({ error: 'Não autorizado.' });
-  }
-  return next();
-}
-
-async function logEvent(eventType, payload, source = 'system') {
-  await supabase.from('integration_events').insert({
-    event_type: eventType,
-    source,
-    payload
-  });
-}
-
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'omnixchannel-api' });
+});
+// Rota health
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+// Rota 404 para rotas não encontradas
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Rota não encontrada.' });
 });
 
-app.post('/api/clients', async (req, res) => {
-  const companyId = sanitizeString(req.body.companyId, 40);
-  const companyName = sanitizeString(req.body.companyName, 120);
-  const contactEmail = sanitizeString(req.body.contactEmail, 120).toLowerCase();
-  const n8nEndpoint = sanitizeString(req.body.n8nEndpoint, 500);
-  const evolutionEndpoint = sanitizeString(req.body.evolutionEndpoint, 500);
-  const securityLevel = sanitizeString(req.body.securityLevel, 20);
-  const product = sanitizeString(req.body.product || 'n8n-evolution', 60);
-
-  const companyIdPattern = /^[A-Za-z0-9_-]{4,40}$/;
-  const corporateEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  if (!companyIdPattern.test(companyId)) {
-    return res.status(400).json({ error: 'companyId inválido.' });
-  }
-
-  if (!corporateEmailPattern.test(contactEmail)) {
-    return res.status(400).json({ error: 'E-mail inválido.' });
-  }
-
-  if (!isHttpsUrl(n8nEndpoint) || !isHttpsUrl(evolutionEndpoint)) {
-    return res.status(400).json({ error: 'Endpoints devem usar HTTPS.' });
-  }
-
-  const { data, error } = await supabase
-    .from('client_integrations')
-    .upsert({
-      company_id: companyId,
-      company_name: companyName,
-      contact_email: contactEmail,
-      n8n_endpoint: n8nEndpoint,
-      evolution_endpoint: evolutionEndpoint,
-      security_level: securityLevel,
-      product,
-      status: 'pending'
-    }, { onConflict: 'company_id' })
-    .select('id, company_id, status, created_at, updated_at')
-    .single();
-
-  if (error) {
-    return res.status(500).json({ error: 'Falha ao persistir cliente.', details: error.message });
-  }
-
-  await logEvent('client_upserted', { companyId, securityLevel, product }, 'portal');
-
-  return res.status(201).json({
-    message: 'Cliente registrado com sucesso.',
-    client: data
-  });
+// Tratamento global de erros
+app.use((err, req, res, next) => {
+  console.error('Erro não tratado:', err);
+  res.status(500).json({ error: 'Erro interno do servidor.' });
 });
 
-app.get('/api/admin/clients', requireAdmin, async (_req, res) => {
-  const { data, error } = await supabase
-    .from('client_integrations')
-    .select('id, company_id, company_name, contact_email, product, security_level, status, created_at, updated_at')
-    .order('created_at', { ascending: false })
-    .limit(200);
-
-  if (error) {
-    return res.status(500).json({ error: 'Falha ao buscar clientes.', details: error.message });
-  }
-
-  return res.json({ clients: data || [] });
-});
-
-app.post('/api/admin/clients/:companyId/sync', requireAdmin, async (req, res) => {
-  const companyId = sanitizeString(req.params.companyId, 40);
-
-  const { data: client, error: fetchError } = await supabase
-    .from('client_integrations')
-    .select('*')
-    .eq('company_id', companyId)
-    .single();
-
-  if (fetchError || !client) {
-    return res.status(404).json({ error: 'Cliente não encontrado.' });
-  }
-
-  const syncPayload = {
-    companyId: client.company_id,
-    companyName: client.company_name,
-    contactEmail: client.contact_email,
-    securityLevel: client.security_level,
-    product: client.product,
-    timestamp: new Date().toISOString()
-  };
-
-  const n8nResponse = await fetch(client.n8n_endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-integration-token': process.env.N8N_SHARED_TOKEN || ''
-    },
-    body: JSON.stringify(syncPayload)
-  }).catch(err => ({ ok: false, status: 500, text: async () => err.message }));
-
-  const evolutionResponse = await fetch(client.evolution_endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: process.env.EVOLUTION_SHARED_TOKEN || ''
-    },
-    body: JSON.stringify(syncPayload)
-  }).catch(err => ({ ok: false, status: 500, text: async () => err.message }));
-
-  const n8nBody = await n8nResponse.text();
-  const evolutionBody = await evolutionResponse.text();
-
-  await supabase
-    .from('client_integrations')
-    .update({
-      status: n8nResponse.ok && evolutionResponse.ok ? 'active' : 'error',
-      last_sync_at: new Date().toISOString()
-    })
-    .eq('id', client.id);
-
-  await logEvent('admin_sync_triggered', {
-    companyId,
-    n8nStatus: n8nResponse.status,
-    evolutionStatus: evolutionResponse.status
-  }, 'admin');
-
-  return res.json({
-    companyId,
-    n8n: { ok: n8nResponse.ok, status: n8nResponse.status, body: n8nBody.slice(0, 400) },
-    evolution: { ok: evolutionResponse.ok, status: evolutionResponse.status, body: evolutionBody.slice(0, 400) }
-  });
-});
-
-app.post('/api/webhooks/n8n', async (req, res) => {
-  await logEvent('n8n_webhook_received', req.body, 'n8n');
-  res.status(202).json({ accepted: true });
-});
-
-app.post('/api/webhooks/evolution', async (req, res) => {
-  await logEvent('evolution_webhook_received', req.body, 'evolution');
-  res.status(202).json({ accepted: true });
-});
-
-app.use((err, _req, res, _next) => {
-  // eslint-disable-next-line no-console
-  console.error(err);
-  res.status(500).json({ error: 'Erro interno.' });
-});
-
-app.listen(port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`API online em http://localhost:${port}`);
+// ======================
+// INICIALIZAÇÃO DO SERVIDOR
+// ======================
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Backend rodando na porta ${PORT}`);
+  console.log(`🔗 Endpoints:`);
+  console.log(`   GET  /health`);
+  console.log(`   POST /api/contact`);
 });
