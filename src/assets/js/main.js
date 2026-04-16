@@ -4,6 +4,7 @@ class ConectXIPApp {
         this.initHeaderScrollEffect();
         this.initObserver();
         this.initContactForm();
+        this.initClientSecurityForm();
     }
 
     initSmoothScroll() {
@@ -70,6 +71,71 @@ class ConectXIPApp {
                 e.preventDefault();
                 alert('Obrigado! Sua mensagem foi enviada. Entraremos em contato em breve.');
             });
+        }
+    }
+
+    initClientSecurityForm() {
+        const form = document.getElementById('client-integration-form');
+        const resultBox = document.getElementById('client-security-result');
+        if (!form || !resultBox) return;
+
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+
+            const companyId = (document.getElementById('company-id').value || '').trim();
+            const email = (document.getElementById('contact-email').value || '').trim();
+            const n8nEndpoint = (document.getElementById('n8n-endpoint').value || '').trim();
+            const evolutionEndpoint = (document.getElementById('evolution-endpoint').value || '').trim();
+            const securityLevel = document.getElementById('security-level').value;
+
+            const validationError = this.validateSecurityPayload({
+                companyId,
+                email,
+                n8nEndpoint,
+                evolutionEndpoint,
+                securityLevel
+            });
+
+            if (validationError) {
+                resultBox.className = 'client-security-result error';
+                resultBox.textContent = validationError;
+                return;
+            }
+
+            resultBox.className = 'client-security-result success';
+            resultBox.textContent = '✅ Requisitos mínimos validados. Próximo passo: provisionamento server-side com segredo em Vault, rotação de token e IP allowlist.';
+            form.reset();
+        });
+    }
+
+    validateSecurityPayload(payload) {
+        const companyIdPattern = /^[A-Za-z0-9_-]{4,40}$/;
+        if (!companyIdPattern.test(payload.companyId)) {
+            return 'ID da empresa inválido. Use apenas letras, números, _ e - com 4 a 40 caracteres.';
+        }
+
+        const isCorporateEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email) && !/@(gmail|hotmail|yahoo|outlook)\./i.test(payload.email);
+        if (!isCorporateEmail) {
+            return 'Use um e-mail corporativo válido para iniciar a integração.';
+        }
+
+        if (!this.isValidHttpsUrl(payload.n8nEndpoint) || !this.isValidHttpsUrl(payload.evolutionEndpoint)) {
+            return 'Os endpoints de integração devem usar HTTPS válido.';
+        }
+
+        if (!payload.securityLevel) {
+            return 'Selecione um nível de segurança para prosseguir.';
+        }
+
+        return '';
+    }
+
+    isValidHttpsUrl(urlString) {
+        try {
+            const parsed = new URL(urlString);
+            return parsed.protocol === 'https:';
+        } catch (error) {
+            return false;
         }
     }
 }

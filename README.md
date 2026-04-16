@@ -21,6 +21,8 @@ O site é totalmente estático, leve, responsivo e otimizado para performance, S
     ✅ Animações ao rolar a página (scroll reveal)
     ✅ Calculadora de ROI interativa
     ✅ Formulário de contato funcional (frontend)
+    ✅ Área de clientes para integração n8n + Evolution API
+    ✅ Validações de segurança no onboarding (HTTPS, e-mail corporativo, padrão de tenant)
     ✅ Estatísticas animadas
     ✅ Pronto para deploy com Docker
     ✅ Arquitetura limpa e modular
@@ -45,6 +47,14 @@ Containerização para produção
 Nginx
 	
 Servidor web leve e eficiente
+
+🛡️ Segurança Aplicada
+
+    ✅ Security headers em nível de servidor (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
+    ✅ CSP restritiva para reduzir risco de XSS e carregamento indevido de conteúdo
+    ✅ Integrações aceitam apenas endpoints HTTPS
+    ✅ Recomendação de armazenamento de credenciais apenas em backend (Vault/KMS)
+    ✅ Fluxo preparado para MFA, rotação de tokens e auditoria de acessos
  
  
  
@@ -54,7 +64,7 @@ conectxip-cloud/
 │   ├── index.html
 │   ├── assets/
 │   │   ├── css/
-│   │   │   └── styles.css
+│   │   │   └── style.css
 │   │   ├── js/
 │   │   │   └── main.js
 │   │   └── images/ (opcional)
@@ -82,7 +92,7 @@ docker run -d -p 80:80 --name conectxip-web conectxip-cloud
     Clone o projeto
     Abra src/index.html no navegador
     Edite:
-        src/assets/css/styles.css para estilos
+        src/assets/css/style.css para estilos
         src/assets/js/main.js para lógica
          
 4.  Após alterações, recompile com Docker ou sirva localmente com:

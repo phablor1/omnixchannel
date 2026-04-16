@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Soluções em Cloud, Conectividade e Automações Inteligentes para empresas." />
     <title>ConectXIP Cloud - Soluções em Conectividade e Cloud</title>
-    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
     <!-- Header -->
@@ -16,6 +16,7 @@
                 <li><a href="#inicio">Início</a></li>
                 <li><a href="#servicos">Cloud & Conectividade</a></li>
                 <li><a href="#automacoes">Automações</a></li>
+                <li><a href="#area-clientes">Área de Clientes</a></li>
                 <li><a href="#sobre">Sobre</a></li>
                 <li><a href="#contato">Contato</a></li>
             </ul>
@@ -280,6 +281,65 @@
                         <button onclick="calculateROI()" class="calculate-btn">Calcular Economia</button>
                         <div id="roi-result" class="roi-result"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Client Area Section -->
+    <section class="client-area" id="area-clientes">
+        <div class="container">
+            <div class="section-header">
+                <h2>Área de Clientes: n8n + Evolution API</h2>
+                <p>Painel dedicado para onboarding seguro de integrações com trilha de auditoria, MFA e boas práticas enterprise.</p>
+            </div>
+
+            <div class="client-area-grid">
+                <div class="client-card secure-onboarding">
+                    <h3>🔐 Onboarding Seguro</h3>
+                    <p>Fluxo guiado para conectar n8n e Evolution API sem expor credenciais no frontend.</p>
+                    <ul class="feature-list">
+                        <li>✓ MFA obrigatório para acesso administrativo</li>
+                        <li>✓ Sessões com expiração curta e renovação segura</li>
+                        <li>✓ Segredos armazenados em cofre (Vault/KMS)</li>
+                        <li>✓ Logs de auditoria e rastreabilidade completa</li>
+                    </ul>
+                </div>
+
+                <div class="client-card client-form-card">
+                    <h3>Solicitar Integração Protegida</h3>
+                    <form id="client-integration-form" class="client-form" novalidate>
+                        <div class="form-group">
+                            <label for="company-id">ID da Empresa</label>
+                            <input type="text" id="company-id" name="companyId" required maxlength="40" pattern="[A-Za-z0-9_-]{4,40}" placeholder="ex: cliente_1234">
+                            <small>Use somente letras, números, _ e - (mín. 4 caracteres).</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-email">E-mail corporativo</label>
+                            <input type="email" id="contact-email" name="contactEmail" required placeholder="seguranca@suaempresa.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="n8n-endpoint">Endpoint n8n (HTTPS obrigatório)</label>
+                            <input type="url" id="n8n-endpoint" name="n8nEndpoint" required placeholder="https://n8n.suaempresa.com/webhook/entrada">
+                        </div>
+                        <div class="form-group">
+                            <label for="evolution-endpoint">Endpoint Evolution API (HTTPS obrigatório)</label>
+                            <input type="url" id="evolution-endpoint" name="evolutionEndpoint" required placeholder="https://api.suaempresa.com/evolution">
+                        </div>
+                        <div class="form-group">
+                            <label for="security-level">Nível de segurança</label>
+                            <select id="security-level" name="securityLevel" required>
+                                <option value="">Selecione</option>
+                                <option value="strict">Strict (recomendado)</option>
+                                <option value="high">High</option>
+                                <option value="standard">Standard</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                            Validar Requisitos de Segurança
+                        </button>
+                        <div id="client-security-result" class="client-security-result" aria-live="polite"></div>
+                    </form>
                 </div>
             </div>
         </div>
