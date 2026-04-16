@@ -1,9 +1,15 @@
 class ConectXIPApp {
     constructor() {
+        this.apiBaseUrl = window.location.origin.includes('localhost:8080')
+            ? 'http://localhost:3000'
+            : window.location.origin;
+        this.adminToken = '';
         this.initSmoothScroll();
         this.initHeaderScrollEffect();
         this.initObserver();
         this.initContactForm();
+        this.initClientSecurityForm();
+        this.initAdminPanel();
     }
 
     initSmoothScroll() {
