@@ -64,14 +64,49 @@ class ConectXIPApp {
     }
 
     initContactForm() {
-        const form = document.querySelector('.contact-form form');
-        if (form) {
+        //const form = document.querySelector('.contact-form form');
+        /*if (form) {
             form.addEventListener('submit', e => {
                 e.preventDefault();
                 alert('Obrigado! Sua mensagem foi enviada. Entraremos em contato em breve.');
             });
-        }
+        }*/
+        // Atualize apenas esta parte do script
+    document.querySelector('.contact-form form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+  
+    const formData = new FormData(this);
+   // const data = Object.fromEntries(formData);
+    const data = {
+        nome: formData.get('nome'),
+        email: formData.get('email'),
+        empresa: formData.get('empresa'),
+        mensagem: formData.get('mensagem')
+    };
+    console.log("ENVIANDO:", data); // 👈 debug
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+  
+      const result = await res.json();
+  
+      if (result.success) {
+        alert('✅ Mensagem enviada com sucesso! Em breve entraremos em contato.');
+        this.reset();
+      } else {
+        alert('❌ ' + result.message);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('❌ Erro de conexão com o servidor. Tente novamente mais tarde.');
     }
+  });
+    }
+    
 }
 
 // ROI Calculator (independente)
