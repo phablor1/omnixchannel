@@ -131,7 +131,6 @@ class ConectXIPApp {
             return;
         }
 
-        this.setClientAreaLocked(true);
         this.loginForm.addEventListener('submit', event => this.handleClientLogin(event));
 
         if (this.clientIntegrationForm) {
@@ -236,21 +235,7 @@ class ConectXIPApp {
 
         this.loginWrapper.classList.toggle('is-hidden', !isLocked);
         this.clientAreaContent.classList.toggle('is-locked', isLocked);
-        this.clientAreaContent.hidden = isLocked;
         this.clientAreaContent.setAttribute('aria-hidden', isLocked ? 'true' : 'false');
-        this.toggleProtectedFields(isLocked);
-    }
-
-    toggleProtectedFields(isLocked) {
-        const protectedFields = this.clientAreaContent.querySelectorAll('input, select, textarea, button');
-        protectedFields.forEach(field => {
-            field.disabled = isLocked;
-            if (isLocked) {
-                field.tabIndex = -1;
-            } else {
-                field.removeAttribute('tabindex');
-            }
-        });
     }
 
     async handleIntegrationSubmit(event) {

@@ -1000,6 +1000,7 @@
             background: #ffffff;
         }
 
+<<<<<<< codex/create-client-access-page-with-authentication-xmd9zp
         .client-login-wrapper {
             display: flex;
             justify-content: center;
@@ -1011,14 +1012,19 @@
             width: min(560px, 100%);
         }
 
+=======
+>>>>>>> main
         .client-login-wrapper.is-hidden {
             display: none;
         }
 
+<<<<<<< codex/create-client-access-page-with-authentication-xmd9zp
         .client-area-content {
             margin-top: 1.5rem;
         }
 
+=======
+>>>>>>> main
         .client-area-content.is-locked {
             display: none;
         }
@@ -1077,7 +1083,10 @@
             justify-content: space-between;
             align-items: center;
             gap: 1rem;
+<<<<<<< codex/create-client-access-page-with-authentication-xmd9zp
             margin-bottom: 0.5rem;
+=======
+>>>>>>> main
         }
 
         .admin-actions {
@@ -1101,6 +1110,7 @@
             margin: 0.2rem 0;
             word-break: break-word;
         }
+<<<<<<< codex/create-client-access-page-with-authentication-xmd9zp
 
         @media (max-width: 768px) {
             .admin-header {
@@ -1108,3 +1118,5 @@
                 align-items: flex-start;
             }
         }
+=======
+>>>>>>> main
