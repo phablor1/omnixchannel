@@ -319,9 +319,74 @@
                 </div>
             </div>
 
-            <div id="client-area-content" class="client-area-content is-locked" aria-hidden="true" hidden>
-                <div class="client-card">
-                    <p>Área protegida. Faça login para carregar os campos de configuração.</p>
+            <div id="client-area-content" class="client-area-content is-locked" aria-hidden="true">
+                <div class="client-area-grid">
+                    <div class="client-card secure-onboarding">
+                        <h3>🔐 Onboarding Seguro</h3>
+                        <p>Fluxo guiado para conectar n8n e Evolution API sem expor credenciais sensíveis no frontend.</p>
+                        <ul class="feature-list">
+                            <li>✓ Sessões com expiração curta e renovação segura</li>
+                            <li>✓ Validação de endpoint HTTPS para n8n e Evolution API</li>
+                            <li>✓ Rastreabilidade de quem criou cada integração</li>
+                            <li>✓ Boas práticas de segurança aplicadas por padrão</li>
+                        </ul>
+                    </div>
+
+                    <div class="client-card client-form-card">
+                        <h3>Configurar Integração</h3>
+                        <form id="client-integration-form" class="client-form" novalidate>
+                            <div class="form-group">
+                                <label for="company-name">Nome da Empresa</label>
+                                <input type="text" id="company-name" name="companyName" required maxlength="120" placeholder="Empresa Exemplo LTDA">
+                            </div>
+                            <div class="form-group">
+                                <label for="company-id">ID da Empresa</label>
+                                <input type="text" id="company-id" name="companyId" required maxlength="40" pattern="[A-Za-z0-9_-]{4,40}" placeholder="ex: cliente_1234">
+                                <small>Use somente letras, números, _ e - (mín. 4 caracteres).</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="contact-email">E-mail corporativo</label>
+                                <input type="email" id="contact-email" name="contactEmail" required placeholder="seguranca@suaempresa.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="n8n-endpoint">Endpoint n8n (HTTPS obrigatório)</label>
+                                <input type="url" id="n8n-endpoint" name="n8nEndpoint" required placeholder="https://n8n.suaempresa.com/webhook/entrada">
+                            </div>
+                            <div class="form-group">
+                                <label for="evolution-endpoint">Endpoint Evolution API (HTTPS obrigatório)</label>
+                                <input type="url" id="evolution-endpoint" name="evolutionEndpoint" required placeholder="https://api.suaempresa.com/evolution">
+                            </div>
+                            <div class="form-group">
+                                <label for="security-level">Nível de segurança</label>
+                                <select id="security-level" name="securityLevel" required>
+                                    <option value="">Selecione</option>
+                                    <option value="strict">Strict (recomendado)</option>
+                                    <option value="high">High</option>
+                                    <option value="standard">Standard</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                                Salvar Integração
+                            </button>
+                            <div id="client-security-result" class="client-security-result" aria-live="polite"></div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="client-area-grid admin-grid">
+                    <div class="client-card">
+                        <div class="admin-header">
+                            <h3>📋 Integrações Registradas</h3>
+                            <button id="client-logout" type="button" class="btn-secondary">Sair</button>
+                        </div>
+                        <p>Visualize as integrações já configuradas para n8n e Evolution API.</p>
+                        <div class="admin-actions">
+                            <button id="refresh-admin-clients" class="btn-primary" type="button">Atualizar Lista</button>
+                        </div>
+                        <div id="admin-clients-list" class="admin-clients-list">
+                            <p>Carregando integrações...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

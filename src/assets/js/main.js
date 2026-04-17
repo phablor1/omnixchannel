@@ -121,19 +121,29 @@ class ConectXIPApp {
         this.loginForm = document.getElementById('client-login-form');
         this.loginStatus = document.getElementById('client-login-status');
         this.clientAreaContent = document.getElementById('client-area-content');
-        this.clientIntegrationForm = null;
-        this.clientSecurityResult = null;
-        this.clientsList = null;
-        this.refreshButton = null;
-        this.logoutButton = null;
-        this.templateLoaded = false;
+        this.clientIntegrationForm = document.getElementById('client-integration-form');
+        this.clientSecurityResult = document.getElementById('client-security-result');
+        this.clientsList = document.getElementById('admin-clients-list');
+        this.refreshButton = document.getElementById('refresh-admin-clients');
+        this.logoutButton = document.getElementById('client-logout');
 
         if (!this.loginForm || !this.clientAreaContent) {
             return;
         }
 
-        this.setClientAreaLocked(true);
         this.loginForm.addEventListener('submit', event => this.handleClientLogin(event));
+
+        if (this.clientIntegrationForm) {
+            this.clientIntegrationForm.addEventListener('submit', event => this.handleIntegrationSubmit(event));
+        }
+
+        if (this.refreshButton) {
+            this.refreshButton.addEventListener('click', () => this.loadClientIntegrations());
+        }
+
+        if (this.logoutButton) {
+            this.logoutButton.addEventListener('click', () => this.handleClientLogout());
+        }
 
         if (this.clientToken) {
             this.restoreClientSession();
@@ -169,7 +179,7 @@ class ConectXIPApp {
 
             this.clientToken = data.token;
             localStorage.setItem('clientPortalToken', this.clientToken);
-            await this.renderProtectedClientArea();
+            this.setClientAreaLocked(false);
             this.setStatus(this.loginStatus, 'Acesso liberado com sucesso.', 'success');
             this.loginForm.reset();
             this.loadClientIntegrations();
@@ -187,7 +197,7 @@ class ConectXIPApp {
                 return;
             }
 
-            await this.renderProtectedClientArea();
+            this.setClientAreaLocked(false);
             this.setStatus(this.loginStatus, 'Sessão restaurada com sucesso.', 'success');
             this.loadClientIntegrations();
         } catch (error) {
@@ -212,20 +222,10 @@ class ConectXIPApp {
     clearSession() {
         this.clientToken = '';
         localStorage.removeItem('clientPortalToken');
-        this.templateLoaded = false;
         this.setClientAreaLocked(true);
-        if (this.clientAreaContent) {
-            this.clientAreaContent.innerHTML = `
-                <div class="client-card">
-                    <p>Área protegida. Faça login para carregar os campos de configuração.</p>
-                </div>
-            `;
+        if (this.clientsList) {
+            this.clientsList.innerHTML = '<p>Conecte-se para visualizar as integrações de clientes.</p>';
         }
-        this.clientIntegrationForm = null;
-        this.clientSecurityResult = null;
-        this.clientsList = null;
-        this.refreshButton = null;
-        this.logoutButton = null;
     }
 
     setClientAreaLocked(isLocked) {
@@ -235,58 +235,7 @@ class ConectXIPApp {
 
         this.loginWrapper.classList.toggle('is-hidden', !isLocked);
         this.clientAreaContent.classList.toggle('is-locked', isLocked);
-        this.clientAreaContent.hidden = isLocked;
         this.clientAreaContent.setAttribute('aria-hidden', isLocked ? 'true' : 'false');
-        this.toggleProtectedFields(isLocked);
-    }
-
-    toggleProtectedFields(isLocked) {
-        const protectedFields = this.clientAreaContent.querySelectorAll('input, select, textarea, button');
-        protectedFields.forEach(field => {
-            field.disabled = isLocked;
-            if (isLocked) {
-                field.tabIndex = -1;
-            } else {
-                field.removeAttribute('tabindex');
-            }
-        });
-    }
-
-    async renderProtectedClientArea() {
-        if (!this.templateLoaded) {
-            const response = await this.authenticatedFetch('/api/client-area/template');
-            const result = await response.json();
-
-            if (!response.ok || !result.success || !result.html) {
-                throw new Error(result.message || 'Não foi possível carregar a área protegida.');
-            }
-
-            this.clientAreaContent.innerHTML = result.html;
-            this.bindProtectedClientAreaEvents();
-            this.templateLoaded = true;
-        }
-
-        this.setClientAreaLocked(false);
-    }
-
-    bindProtectedClientAreaEvents() {
-        this.clientIntegrationForm = document.getElementById('client-integration-form');
-        this.clientSecurityResult = document.getElementById('client-security-result');
-        this.clientsList = document.getElementById('admin-clients-list');
-        this.refreshButton = document.getElementById('refresh-admin-clients');
-        this.logoutButton = document.getElementById('client-logout');
-
-        if (this.clientIntegrationForm) {
-            this.clientIntegrationForm.addEventListener('submit', event => this.handleIntegrationSubmit(event));
-        }
-
-        if (this.refreshButton) {
-            this.refreshButton.addEventListener('click', () => this.loadClientIntegrations());
-        }
-
-        if (this.logoutButton) {
-            this.logoutButton.addEventListener('click', () => this.handleClientLogout());
-        }
     }
 
     async handleIntegrationSubmit(event) {

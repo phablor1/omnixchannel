@@ -1011,6 +1011,7 @@
             width: min(560px, 100%);
         }
 
+
         .client-login-wrapper.is-hidden {
             display: none;
         }
@@ -1018,6 +1019,7 @@
         .client-area-content {
             margin-top: 1.5rem;
         }
+
 
         .client-area-content.is-locked {
             display: none;
@@ -1077,7 +1079,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 0.5rem;
+
         }
 
         .admin-actions {
@@ -1108,3 +1110,4 @@
                 align-items: flex-start;
             }
         }
+
