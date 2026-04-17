@@ -10,6 +10,7 @@ COPY package*.json ./
 RUN npm install --production
 
 COPY server.js .env ./
+COPY src ./src
 
 EXPOSE 3000
 
