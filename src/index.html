@@ -4,14 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Soluções em Cloud, Conectividade e Automações Inteligentes para empresas." />
-    <title>ConectXIP Cloud - Soluções em Conectividade e Cloud</title>
-    <link rel="stylesheet" href="assets/css/style.css" />
+    <title>Omnix Channel - Soluções em Conectividade e Cloud</title>
+    <link rel="stylesheet" href="./assets/css/styles.css" />
+         
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <nav class="nav">
-            <div class="logo">ConectXIP Cloud</div>
+            <div class="logo">Omnix Channel</div>
             <ul class="nav-links">
                 <li><a href="#inicio">Início</a></li>
                 <li><a href="#servicos">Cloud & Conectividade</a></li>
@@ -21,6 +22,7 @@
                 <li><a href="#contato">Contato</a></li>
             </ul>
             <a href="#contato" class="cta-button">Fale Conosco</a>
+            
         </nav>
     </header>
 
@@ -106,6 +108,8 @@
             </div>
             
             <!-- Main Automation Services -->
+            
+              
             <div class="automation-showcase">
                 <div class="showcase-grid">
                     <div class="showcase-item whatsapp-automation">
@@ -410,8 +414,8 @@
             <div class="contact-content">
                 <div class="contact-info">
                     <h3>Informações de Contato</h3>
-                    <p>📧 contato@conectxip.cloud</p>
-                    <p>📱 (11) 9999-9999</p>
+                    <p>📧 omnixchanel@gmail.com</p>
+                    <p>📱 (11) 996916-7363</p>
                     <p>📍 São Paulo, SP - Brasil</p>
                     <br>
                     <h4>Horário de Atendimento</h4>
@@ -422,19 +426,19 @@
                     <form>
                         <div class="form-group">
                             <label for="nome">Nome Completo</label>
-                            <input type="text" id="nome" required>
+                            <input type="text" id="nome" name="nome" required>
                         </div>
                         <div class="form-group">
                             <label for="email">E-mail</label>
-                            <input type="email" id="email" required>
+                            <input type="email" id="email" name="email" required>
                         </div>
                         <div class="form-group">
                             <label for="empresa">Empresa</label>
-                            <input type="text" id="empresa">
+                            <input type="text" id="empresa" name="empresa">
                         </div>
                         <div class="form-group">
                             <label for="mensagem">Mensagem</label>
-                            <textarea id="mensagem" rows="5" required></textarea>
+                            <textarea id="mensagem" name="mensagem" rows="5" required></textarea>
                         </div>
                         <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
                             Enviar Mensagem
@@ -476,8 +480,8 @@
                 </div>
                 <div class="footer-section">
                     <h3>Contato</h3>
-                    <p>contato@conectxip.cloud</p>
-                    <p>(11) 9999-9999</p>
+                    <p>omnixchanel@gmail.com</p>
+                    <p>(11) 96916-7363</p>
                     <p>São Paulo, SP</p>
                 </div>
             </div>
@@ -487,5 +491,23 @@
         </div>
     </footer>
     <script src="assets/js/main.js"></script>
+    <!-- /* ✅ Chatwoot Integration (adicione antes do </body>) */ -->
+    <script>
+        
+  window.chatwootSettings = {"position":"right","type":"standard","launcherTitle":"Fale com nosso time agora"};
+  (function(d,t) {
+    var BASE_URL="https://omnix.conectxip.cloud";
+    var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+    g.src=BASE_URL+"/packs/js/sdk.js";
+    g.async = true;
+    s.parentNode.insertBefore(g,s);
+    g.onload=function(){
+      window.chatwootSDK.run({
+        websiteToken: 'EyLkszHCD3gte7URVVRqs3e3',
+        baseUrl: BASE_URL
+      })
+    }
+  })(document,"script");
+    </script>      
 </body>
 </html>

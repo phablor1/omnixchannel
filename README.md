@@ -126,13 +126,6 @@ cp .env.example .env
 -- executar conteúdo de supabase/schema.sql
 ```
 
-Ou aplique via script (recomendado para repetir em homologação/produção):
-
-```bash
-export SUPABASE_DB_URL='postgresql://postgres:<senha>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require'
-./scripts/apply_supabase_schema.sh
-```
-
 O schema cria:
 - `client_integrations` (cadastro principal de clientes/integrações)
 - `integration_secrets` (segredos por provedor com vínculo ao cliente)
