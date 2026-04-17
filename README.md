@@ -140,6 +140,27 @@ npm install
 npm run start
 ```
 
+
+### Padrões corporativos para produção (backend)
+
+### Arquitetura backend em padrão MVC
+
+O backend foi organizado em camadas para facilitar manutenção e escala:
+
+- `controllers/`: regras de entrada/saída HTTP e validações de payload.
+- `services/`: regras de negócio e integração (SMTP/Supabase).
+- `routes/`: definição explícita dos endpoints por domínio.
+- `middlewares/`: preocupações transversais (segurança, autenticação, rate limit, observabilidade).
+- `config/`: centralização de variáveis de ambiente e provedores externos.
+
+Essa estrutura reduz acoplamento, facilita testes e segue boas práticas de aplicações corporativas em produção.
+
+- **Fail-fast de configuração**: em `NODE_ENV=production`, o backend valida `CLIENT_PORTAL_PASSWORD`, `SMTP_USER` e `SMTP_PASS` antes de subir.
+- **Segurança HTTP**: uso de `helmet` para hardening de headers e remoção de `X-Powered-By`.
+- **Rastreabilidade**: cada requisição recebe `X-Request-Id` com log via `morgan`.
+- **Operação resiliente**: suporte a *graceful shutdown* (`SIGINT`/`SIGTERM`) para deploy sem queda abrupta.
+- **Health check ampliado**: endpoint `/health` informa ambiente e status de conectividade da persistência (Supabase).
+
 Principais rotas:
 
 - `POST /api/clients` → cadastro/atualização de cliente com persistência.
