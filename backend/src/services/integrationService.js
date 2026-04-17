@@ -48,6 +48,19 @@ async function listClientIntegrations() {
   return data;
 }
 
+
+async function listIntegrationEvents() {
+  const { data, error } = await supabase
+    .from('integration_events')
+    .select('client_integration_id, event_type, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
 async function registerIntegrationEvent({ clientIntegrationId, companyId, actor }) {
   await supabase.from('integration_events').insert({
     client_integration_id: clientIntegrationId,
@@ -62,5 +75,6 @@ module.exports = {
   checkPersistenceHealth,
   upsertClientIntegration,
   listClientIntegrations,
+  listIntegrationEvents,
   registerIntegrationEvent
 };

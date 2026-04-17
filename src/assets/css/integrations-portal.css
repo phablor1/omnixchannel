@@ -1,0 +1,53 @@
+.portal-page {
+    background: #f3f6fb;
+    min-height: 100vh;
+}
+
+.portal-main {
+    padding: 7rem 5% 3rem;
+}
+
+.portal-hero {
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+}
+
+.portal-hero h1 {
+    font-size: 2.2rem;
+    margin-bottom: 0.6rem;
+}
+
+.portal-button {
+    width: 100%;
+    justify-content: center;
+}
+
+.portal-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+.metric-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1rem;
+    background: #fafafa;
+}
+
+.metric-card h4 {
+    color: #4361ee;
+    font-size: 1.6rem;
+}
+
+.metric-card p {
+    font-size: 0.9rem;
+    margin-top: 0.2rem;
+}
+
+.portal-reports {
+    margin: 1rem 0;
+    border-left: 3px solid #4361ee;
+    padding-left: 0.8rem;
+}

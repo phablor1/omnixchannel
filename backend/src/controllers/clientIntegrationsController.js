@@ -2,6 +2,7 @@ const {
   ensurePersistenceAvailable,
   upsertClientIntegration,
   listClientIntegrations,
+  listIntegrationEvents,
   registerIntegrationEvent
 } = require('../services/integrationService');
 const { sanitizeText, isSecureHttpsUrl } = require('../utils/sanitize');
@@ -19,6 +20,32 @@ function mapIntegration(item) {
     createdAt: item.created_at,
     updatedAt: item.updated_at
   };
+}
+
+
+function buildUsageByIntegration(events = []) {
+  return events.reduce((acc, event) => {
+    const key = event.client_integration_id;
+    if (!key) {
+      return acc;
+    }
+
+    const current = acc.get(key) || {
+      eventCount: 0,
+      lastEventAt: null,
+      lastEventType: null
+    };
+
+    current.eventCount += 1;
+
+    if (!current.lastEventAt || new Date(event.created_at) > new Date(current.lastEventAt)) {
+      current.lastEventAt = event.created_at;
+      current.lastEventType = event.event_type || 'unknown';
+    }
+
+    acc.set(key, current);
+    return acc;
+  }, new Map());
 }
 
 async function upsertIntegration(req, res) {
@@ -115,4 +142,69 @@ async function getIntegrations(req, res) {
   }
 }
 
-module.exports = { upsertIntegration, getIntegrations };
+
+async function getIntegrationsReport(req, res) {
+  if (!ensurePersistenceAvailable()) {
+    return res.status(503).json({
+      success: false,
+      message: 'Persistência indisponível. Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.'
+    });
+  }
+
+  try {
+    const [integrationsRaw, events] = await Promise.all([
+      listClientIntegrations(),
+      listIntegrationEvents()
+    ]);
+
+    const usageByIntegration = buildUsageByIntegration(events);
+    const integrations = integrationsRaw.map((item) => {
+      const mapped = mapIntegration(item);
+      const usage = usageByIntegration.get(mapped.id) || {
+        eventCount: 0,
+        lastEventAt: null,
+        lastEventType: null
+      };
+
+      return {
+        ...mapped,
+        usage
+      };
+    });
+
+    const metrics = integrations.reduce((acc, integration) => {
+      acc.totalIntegrations += 1;
+      acc.totalEvents += integration.usage.eventCount;
+
+      if (integration.securityLevel === 'strict') {
+        acc.strictSecurityCount += 1;
+      }
+
+      if (integration.status === 'active') {
+        acc.activeCount += 1;
+      }
+
+      return acc;
+    }, {
+      totalIntegrations: 0,
+      totalEvents: 0,
+      strictSecurityCount: 0,
+      activeCount: 0
+    });
+
+    return res.json({
+      success: true,
+      generatedAt: new Date().toISOString(),
+      metrics,
+      integrations
+    });
+  } catch (error) {
+    console.error(`[${req.requestId}] Erro ao consultar relatório de integrações:`, error);
+    return res.status(500).json({
+      success: false,
+      message: 'Falha ao gerar relatório de integrações.'
+    });
+  }
+}
+
+module.exports = { upsertIntegration, getIntegrations, getIntegrationsReport };
