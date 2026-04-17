@@ -994,3 +994,94 @@
                 filter: invert(1);
             }
         }
+        /* Client Area */
+        .client-area {
+            padding: 6rem 5% 4rem;
+            background: #ffffff;
+        }
+
+        .client-login-wrapper.is-hidden {
+            display: none;
+        }
+
+        .client-area-content.is-locked {
+            display: none;
+        }
+
+        .client-area-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .client-card {
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-medium);
+            box-shadow: var(--shadow-light);
+            padding: 2rem;
+        }
+
+        .client-card h3 {
+            margin-bottom: 0.6rem;
+        }
+
+        .client-form {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .client-form input,
+        .client-form select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #d3d7de;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .client-security-result {
+            margin-top: 0.8rem;
+            min-height: 1.4rem;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .client-security-result.is-success {
+            color: #106b21;
+        }
+
+        .client-security-result.is-error {
+            color: #b42318;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .admin-actions {
+            margin: 1rem 0;
+        }
+
+        .admin-clients-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .admin-client-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1rem;
+            background: #fafafa;
+        }
+
+        .admin-client-item p,
+        .admin-client-item small {
+            margin: 0.2rem 0;
+            word-break: break-word;
+        }

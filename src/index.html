@@ -295,85 +295,97 @@
         <div class="container">
             <div class="section-header">
                 <h2>Área de Clientes: n8n + Evolution API</h2>
-                <p>Painel dedicado para onboarding seguro de integrações com trilha de auditoria, MFA e boas práticas enterprise.</p>
+                <p>Ambiente protegido por usuário e senha para configurar integrações com segurança e rastreabilidade.</p>
             </div>
 
-            <div class="client-area-grid">
-                <div class="client-card secure-onboarding">
-                    <h3>🔐 Onboarding Seguro</h3>
-                    <p>Fluxo guiado para conectar n8n e Evolution API sem expor credenciais no frontend.</p>
-                    <ul class="feature-list">
-                        <li>✓ MFA obrigatório para acesso administrativo</li>
-                        <li>✓ Sessões com expiração curta e renovação segura</li>
-                        <li>✓ Segredos armazenados em cofre (Vault/KMS)</li>
-                        <li>✓ Logs de auditoria e rastreabilidade completa</li>
-                    </ul>
-                </div>
-
-                <div class="client-card client-form-card">
-                    <h3>Solicitar Integração Protegida</h3>
-                    <form id="client-integration-form" class="client-form" novalidate>
+            <div class="client-login-wrapper" id="client-login-wrapper">
+                <div class="client-card client-login-card">
+                    <h3>🔐 Acesso do Cliente</h3>
+                    <p>Entre com suas credenciais para liberar as configurações de integração.</p>
+                    <form id="client-login-form" class="client-form" novalidate>
                         <div class="form-group">
-                            <label for="company-name">Nome da Empresa</label>
-                            <input type="text" id="company-name" name="companyName" required maxlength="120" placeholder="Empresa Exemplo LTDA">
+                            <label for="client-username">Usuário</label>
+                            <input type="text" id="client-username" name="username" required maxlength="80" autocomplete="username" placeholder="Seu usuário de cliente">
                         </div>
                         <div class="form-group">
-                            <label for="company-id">ID da Empresa</label>
-                            <input type="text" id="company-id" name="companyId" required maxlength="40" pattern="[A-Za-z0-9_-]{4,40}" placeholder="ex: cliente_1234">
-                            <small>Use somente letras, números, _ e - (mín. 4 caracteres).</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="contact-email">E-mail corporativo</label>
-                            <input type="email" id="contact-email" name="contactEmail" required placeholder="seguranca@suaempresa.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="n8n-endpoint">Endpoint n8n (HTTPS obrigatório)</label>
-                            <input type="url" id="n8n-endpoint" name="n8nEndpoint" required placeholder="https://n8n.suaempresa.com/webhook/entrada">
-                        </div>
-                        <div class="form-group">
-                            <label for="evolution-endpoint">Endpoint Evolution API (HTTPS obrigatório)</label>
-                            <input type="url" id="evolution-endpoint" name="evolutionEndpoint" required placeholder="https://api.suaempresa.com/evolution">
-                        </div>
-                        <div class="form-group">
-                            <label for="security-level">Nível de segurança</label>
-                            <select id="security-level" name="securityLevel" required>
-                                <option value="">Selecione</option>
-                                <option value="strict">Strict (recomendado)</option>
-                                <option value="high">High</option>
-                                <option value="standard">Standard</option>
-                            </select>
+                            <label for="client-password">Senha</label>
+                            <input type="password" id="client-password" name="password" required maxlength="120" autocomplete="current-password" placeholder="Sua senha segura">
                         </div>
                         <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
-                            Validar Requisitos de Segurança
+                            Entrar na Área de Clientes
                         </button>
-                        <div id="client-security-result" class="client-security-result" aria-live="polite"></div>
                     </form>
+                    <div id="client-login-status" class="client-security-result" aria-live="polite"></div>
                 </div>
             </div>
 
-            <div class="client-area-grid admin-grid">
-                <div class="client-card">
-                    <h3>🛠️ Área Administrativa</h3>
-                    <p>Gerencie integrações de clientes com persistência em Supabase e acione sincronização com n8n e Evolution API.</p>
-                    <form id="admin-auth-form" class="client-form" novalidate>
-                        <div class="form-group">
-                            <label for="admin-token">Token Administrativo</label>
-                            <input type="password" id="admin-token" placeholder="Informe o token do backend" required>
-                        </div>
-                        <button type="submit" class="btn-secondary" style="width: 100%; justify-content: center;">
-                            Conectar Painel Admin
-                        </button>
-                    </form>
-                    <div id="admin-status" class="client-security-result" aria-live="polite"></div>
+            <div id="client-area-content" class="client-area-content is-locked" aria-hidden="true">
+                <div class="client-area-grid">
+                    <div class="client-card secure-onboarding">
+                        <h3>🔐 Onboarding Seguro</h3>
+                        <p>Fluxo guiado para conectar n8n e Evolution API sem expor credenciais sensíveis no frontend.</p>
+                        <ul class="feature-list">
+                            <li>✓ Sessões com expiração curta e renovação segura</li>
+                            <li>✓ Validação de endpoint HTTPS para n8n e Evolution API</li>
+                            <li>✓ Rastreabilidade de quem criou cada integração</li>
+                            <li>✓ Boas práticas de segurança aplicadas por padrão</li>
+                        </ul>
+                    </div>
+
+                    <div class="client-card client-form-card">
+                        <h3>Configurar Integração</h3>
+                        <form id="client-integration-form" class="client-form" novalidate>
+                            <div class="form-group">
+                                <label for="company-name">Nome da Empresa</label>
+                                <input type="text" id="company-name" name="companyName" required maxlength="120" placeholder="Empresa Exemplo LTDA">
+                            </div>
+                            <div class="form-group">
+                                <label for="company-id">ID da Empresa</label>
+                                <input type="text" id="company-id" name="companyId" required maxlength="40" pattern="[A-Za-z0-9_-]{4,40}" placeholder="ex: cliente_1234">
+                                <small>Use somente letras, números, _ e - (mín. 4 caracteres).</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="contact-email">E-mail corporativo</label>
+                                <input type="email" id="contact-email" name="contactEmail" required placeholder="seguranca@suaempresa.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="n8n-endpoint">Endpoint n8n (HTTPS obrigatório)</label>
+                                <input type="url" id="n8n-endpoint" name="n8nEndpoint" required placeholder="https://n8n.suaempresa.com/webhook/entrada">
+                            </div>
+                            <div class="form-group">
+                                <label for="evolution-endpoint">Endpoint Evolution API (HTTPS obrigatório)</label>
+                                <input type="url" id="evolution-endpoint" name="evolutionEndpoint" required placeholder="https://api.suaempresa.com/evolution">
+                            </div>
+                            <div class="form-group">
+                                <label for="security-level">Nível de segurança</label>
+                                <select id="security-level" name="securityLevel" required>
+                                    <option value="">Selecione</option>
+                                    <option value="strict">Strict (recomendado)</option>
+                                    <option value="high">High</option>
+                                    <option value="standard">Standard</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                                Salvar Integração
+                            </button>
+                            <div id="client-security-result" class="client-security-result" aria-live="polite"></div>
+                        </form>
+                    </div>
                 </div>
 
-                <div class="client-card">
-                    <h3>Clientes Integrados</h3>
-                    <div class="admin-actions">
-                        <button id="refresh-admin-clients" class="btn-primary" type="button">Atualizar Lista</button>
-                    </div>
-                    <div id="admin-clients-list" class="admin-clients-list">
-                        <p>Conecte o token administrativo para visualizar os clientes.</p>
+                <div class="client-area-grid admin-grid">
+                    <div class="client-card">
+                        <div class="admin-header">
+                            <h3>📋 Integrações Registradas</h3>
+                            <button id="client-logout" type="button" class="btn-secondary">Sair</button>
+                        </div>
+                        <p>Visualize as integrações já configuradas para n8n e Evolution API.</p>
+                        <div class="admin-actions">
+                            <button id="refresh-admin-clients" class="btn-primary" type="button">Atualizar Lista</button>
+                        </div>
+                        <div id="admin-clients-list" class="admin-clients-list">
+                            <p>Carregando integrações...</p>
+                        </div>
                     </div>
                 </div>
             </div>
