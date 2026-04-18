@@ -5,8 +5,12 @@ const {
   softDeleteClientIntegration,
   listClientIntegrations,
   listIntegrationEvents,
-  registerIntegrationEvent
+  registerIntegrationEvent,
+  upsertIntegrationSecret,
+  getIntegrationSecret,
+  getClientIntegrationById
 } = require('../services/integrationService');
+const { callEvolution, buildInstancePayload } = require('../services/evolutionService');
 const { sanitizeText, isSecureHttpsUrl } = require('../utils/sanitize');
 
 function mapIntegration(item) {
@@ -24,13 +28,63 @@ function mapIntegration(item) {
   };
 }
 
-function validateIntegrationInput(body) {
-  const companyName = sanitizeText(body?.companyName, 120);
-  const companyId = sanitizeText(body?.companyId, 40);
-  const contactEmail = sanitizeText(body?.contactEmail, 120).toLowerCase();
-  const n8nEndpoint = sanitizeText(body?.n8nEndpoint, 255);
-  const evolutionEndpoint = sanitizeText(body?.evolutionEndpoint, 255);
-  const securityLevel = sanitizeText(body?.securityLevel, 20).toLowerCase();
+function buildUsageByIntegration(events = []) {
+  return events.reduce((acc, event) => {
+    const key = event.client_integration_id;
+    if (!key) {
+      return acc;
+    }
+
+    const current = acc.get(key) || {
+      eventCount: 0,
+      lastEventAt: null,
+      lastEventType: null
+    };
+
+    current.eventCount += 1;
+
+    if (!current.lastEventAt || new Date(event.created_at) > new Date(current.lastEventAt)) {
+      current.lastEventAt = event.created_at;
+      current.lastEventType = event.event_type || 'unknown';
+    }
+
+    acc.set(key, current);
+    return acc;
+  }, new Map());
+}
+
+async function resolveEvolutionContext(integrationId) {
+  const integration = await getClientIntegrationById(integrationId);
+  if (!integration) {
+    return { error: 'Integração não encontrada.' };
+  }
+
+  const secret = await getIntegrationSecret(integrationId, 'evolution');
+  if (!secret?.secret_key) {
+    return { error: 'Credencial da Evolution API não cadastrada para esta integração.' };
+  }
+
+  return {
+    integration,
+    endpoint: integration.evolution_endpoint,
+    apiKey: secret.secret_key
+  };
+}
+
+async function upsertIntegration(req, res) {
+  if (!ensurePersistenceAvailable()) {
+    return res.status(503).json({
+      success: false,
+      message: 'Persistência indisponível. Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.'
+    });
+  }
+
+  const companyName = sanitizeText(req.body?.companyName, 120);
+  const companyId = sanitizeText(req.body?.companyId, 40);
+  const contactEmail = sanitizeText(req.body?.contactEmail, 120).toLowerCase();
+  const n8nEndpoint = sanitizeText(req.body?.n8nEndpoint, 255);
+  const evolutionEndpoint = sanitizeText(req.body?.evolutionEndpoint, 255);
+  const securityLevel = sanitizeText(req.body?.securityLevel, 20).toLowerCase();
 
   const companyIdRegex = /^[A-Za-z0-9_-]{4,40}$/;
   const validLevels = new Set(['strict', 'high', 'standard']);
@@ -223,8 +277,11 @@ async function getIntegrations(req, res) {
 }
 
 async function getIntegrationsReport(req, res) {
-  if (!ensurePersistence(req, res)) {
-    return;
+  if (!ensurePersistenceAvailable()) {
+    return res.status(503).json({
+      success: false,
+      message: 'Persistência indisponível. Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.'
+    });
   }
 
   try {
@@ -283,10 +340,275 @@ async function getIntegrationsReport(req, res) {
   }
 }
 
+async function saveEvolutionCredentials(req, res) {
+  if (!ensurePersistenceAvailable()) {
+    return res.status(503).json({ success: false, message: 'Persistência indisponível.' });
+  }
+
+  const integrationId = sanitizeText(req.params.integrationId || '', 80);
+  const apiKey = sanitizeText(req.body?.apiKey || '', 300);
+
+  if (!integrationId || !apiKey) {
+    return res.status(400).json({ success: false, message: 'integrationId e apiKey são obrigatórios.' });
+  }
+
+  try {
+    const integration = await getClientIntegrationById(integrationId);
+    if (!integration) {
+      return res.status(404).json({ success: false, message: 'Integração não encontrada.' });
+    }
+
+    await upsertIntegrationSecret({
+      clientIntegrationId: integrationId,
+      provider: 'evolution',
+      secretKey: apiKey,
+      metadata: { updatedBy: req.session.username }
+    });
+
+    await registerIntegrationEvent({
+      clientIntegrationId: integrationId,
+      companyId: integration.company_id,
+      actor: req.session.username,
+      eventType: 'evolution_credentials_updated'
+    });
+
+    return res.json({ success: true, message: 'Credencial da Evolution API atualizada.' });
+  } catch (error) {
+    console.error(`[${req.requestId}] Erro ao salvar credencial Evolution:`, error);
+    return res.status(500).json({ success: false, message: 'Falha ao salvar credencial da Evolution API.' });
+  }
+}
+
+async function listEvolutionInstances(req, res) {
+  const integrationId = sanitizeText(req.params.integrationId || '', 80);
+
+  try {
+    const context = await resolveEvolutionContext(integrationId);
+    if (context.error) {
+      return res.status(404).json({ success: false, message: context.error });
+    }
+
+    const evolutionResponse = await callEvolution({
+      endpoint: context.endpoint,
+      apiKey: context.apiKey,
+      method: 'GET',
+      path: '/instance/fetchInstances'
+    });
+
+    return res.status(evolutionResponse.status).json({
+      success: evolutionResponse.ok,
+      integrationId,
+      data: evolutionResponse.body
+    });
+  } catch (error) {
+    console.error(`[${req.requestId}] Erro ao listar instâncias Evolution:`, error);
+    return res.status(500).json({ success: false, message: 'Falha ao listar instâncias da Evolution API.' });
+  }
+}
+
+async function createEvolutionInstance(req, res) {
+  const integrationId = sanitizeText(req.params.integrationId || '', 80);
+  const instanceResult = buildInstancePayload(req.body || {});
+
+  if (instanceResult.error) {
+    return res.status(400).json({ success: false, message: instanceResult.error });
+  }
+
+  try {
+    const context = await resolveEvolutionContext(integrationId);
+    if (context.error) {
+      return res.status(404).json({ success: false, message: context.error });
+    }
+
+    const evolutionResponse = await callEvolution({
+      endpoint: context.endpoint,
+      apiKey: context.apiKey,
+      method: 'POST',
+      path: '/instance/create',
+      payload: instanceResult.payload
+    });
+
+    await registerIntegrationEvent({
+      clientIntegrationId: integrationId,
+      companyId: context.integration.company_id,
+      actor: req.session.username,
+      eventType: 'evolution_instance_created',
+      payload: { instanceName: instanceResult.payload.instanceName }
+    });
+
+    return res.status(evolutionResponse.status).json({
+      success: evolutionResponse.ok,
+      message: evolutionResponse.ok ? 'Instância criada com sucesso.' : 'Falha ao criar instância.',
+      data: evolutionResponse.body
+    });
+  } catch (error) {
+    console.error(`[${req.requestId}] Erro ao criar instância Evolution:`, error);
+    return res.status(500).json({ success: false, message: 'Falha ao criar instância na Evolution API.' });
+  }
+}
+
+async function updateEvolutionInstance(req, res) {
+  const integrationId = sanitizeText(req.params.integrationId || '', 80);
+  const instanceName = sanitizeText(req.params.instanceName || '', 80);
+
+  if (!instanceName) {
+    return res.status(400).json({ success: false, message: 'Nome da instância é obrigatório.' });
+  }
+
+  try {
+    const context = await resolveEvolutionContext(integrationId);
+    if (context.error) {
+      return res.status(404).json({ success: false, message: context.error });
+    }
+
+    const evolutionResponse = await callEvolution({
+      endpoint: context.endpoint,
+      apiKey: context.apiKey,
+      method: 'PUT',
+      path: `/instance/update/${encodeURIComponent(instanceName)}`,
+      payload: req.body || {}
+    });
+
+    await registerIntegrationEvent({
+      clientIntegrationId: integrationId,
+      companyId: context.integration.company_id,
+      actor: req.session.username,
+      eventType: 'evolution_instance_updated',
+      payload: { instanceName }
+    });
+
+    return res.status(evolutionResponse.status).json({
+      success: evolutionResponse.ok,
+      data: evolutionResponse.body
+    });
+  } catch (error) {
+    console.error(`[${req.requestId}] Erro ao atualizar instância Evolution:`, error);
+    return res.status(500).json({ success: false, message: 'Falha ao atualizar instância na Evolution API.' });
+  }
+}
+
+async function deleteEvolutionInstance(req, res) {
+  const integrationId = sanitizeText(req.params.integrationId || '', 80);
+  const instanceName = sanitizeText(req.params.instanceName || '', 80);
+
+  if (!instanceName) {
+    return res.status(400).json({ success: false, message: 'Nome da instância é obrigatório.' });
+  }
+
+  try {
+    const context = await resolveEvolutionContext(integrationId);
+    if (context.error) {
+      return res.status(404).json({ success: false, message: context.error });
+    }
+
+    const evolutionResponse = await callEvolution({
+      endpoint: context.endpoint,
+      apiKey: context.apiKey,
+      method: 'DELETE',
+      path: `/instance/delete/${encodeURIComponent(instanceName)}`
+    });
+
+    await registerIntegrationEvent({
+      clientIntegrationId: integrationId,
+      companyId: context.integration.company_id,
+      actor: req.session.username,
+      eventType: 'evolution_instance_deleted',
+      payload: { instanceName }
+    });
+
+    return res.status(evolutionResponse.status).json({
+      success: evolutionResponse.ok,
+      data: evolutionResponse.body
+    });
+  } catch (error) {
+    console.error(`[${req.requestId}] Erro ao remover instância Evolution:`, error);
+    return res.status(500).json({ success: false, message: 'Falha ao remover instância da Evolution API.' });
+  }
+}
+
+async function getEvolutionQrCode(req, res) {
+  const integrationId = sanitizeText(req.params.integrationId || '', 80);
+  const instanceName = sanitizeText(req.params.instanceName || '', 80);
+
+  if (!instanceName) {
+    return res.status(400).json({ success: false, message: 'Nome da instância é obrigatório.' });
+  }
+
+  try {
+    const context = await resolveEvolutionContext(integrationId);
+    if (context.error) {
+      return res.status(404).json({ success: false, message: context.error });
+    }
+
+    const evolutionResponse = await callEvolution({
+      endpoint: context.endpoint,
+      apiKey: context.apiKey,
+      method: 'GET',
+      path: `/instance/connect/${encodeURIComponent(instanceName)}`
+    });
+
+    return res.status(evolutionResponse.status).json({
+      success: evolutionResponse.ok,
+      data: evolutionResponse.body
+    });
+  } catch (error) {
+    console.error(`[${req.requestId}] Erro ao gerar QR Code Evolution:`, error);
+    return res.status(500).json({ success: false, message: 'Falha ao gerar QR Code da instância.' });
+  }
+}
+
+async function proxyEvolutionConfig(req, res) {
+  const integrationId = sanitizeText(req.params.integrationId || '', 80);
+  const method = sanitizeText(req.body?.method || 'GET', 10).toUpperCase();
+  const path = sanitizeText(req.body?.path || '/', 255);
+
+  if (!path.startsWith('/')) {
+    return res.status(400).json({ success: false, message: 'path deve iniciar com /' });
+  }
+
+  try {
+    const context = await resolveEvolutionContext(integrationId);
+    if (context.error) {
+      return res.status(404).json({ success: false, message: context.error });
+    }
+
+    const evolutionResponse = await callEvolution({
+      endpoint: context.endpoint,
+      apiKey: context.apiKey,
+      method,
+      path,
+      query: req.body?.query || {},
+      payload: req.body?.payload
+    });
+
+    await registerIntegrationEvent({
+      clientIntegrationId: integrationId,
+      companyId: context.integration.company_id,
+      actor: req.session.username,
+      eventType: 'evolution_config_proxy',
+      payload: { method, path }
+    });
+
+    return res.status(evolutionResponse.status).json({
+      success: evolutionResponse.ok,
+      request: { method, path },
+      data: evolutionResponse.body
+    });
+  } catch (error) {
+    console.error(`[${req.requestId}] Erro no proxy de configuração Evolution:`, error);
+    return res.status(500).json({ success: false, message: 'Falha ao executar operação avançada na Evolution API.' });
+  }
+}
+
 module.exports = {
   upsertIntegration,
-  updateIntegration,
-  deleteIntegration,
   getIntegrations,
-  getIntegrationsReport
+  getIntegrationsReport,
+  saveEvolutionCredentials,
+  listEvolutionInstances,
+  createEvolutionInstance,
+  updateEvolutionInstance,
+  deleteEvolutionInstance,
+  getEvolutionQrCode,
+  proxyEvolutionConfig
 };
