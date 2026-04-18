@@ -3,10 +3,10 @@ version: '3.3'
 services:
   omnixchannel-web:
     container_name: omnixchannel-web
-    image: omnixchannel:v2
-    #build:
-      #context: .
-      #dockerfile: docker/Dockerfile
+    #image: omnixchannel:v2
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8008:80"
     volumes:
@@ -36,6 +36,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    env_file:
+    - .env  
     ports:
       - "3000:3000"
     environment:

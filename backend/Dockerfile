@@ -9,7 +9,7 @@ COPY package*.json ./
 #RUN npm ci --omit=dev
 RUN npm install --production
 
-COPY server.js .env ./
+COPY server.js ./
 COPY src ./src
 
 EXPOSE 3000
