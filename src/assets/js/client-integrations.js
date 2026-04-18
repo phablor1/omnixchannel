@@ -21,11 +21,25 @@ class IntegrationsApiModel {
         return this.authenticatedFetch('/api/client-auth/logout', token, { method: 'POST' });
     }
 
-    async saveIntegration(token, payload) {
+    async createIntegration(token, payload) {
         return this.authenticatedFetch('/api/client-integrations', token, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
+        });
+    }
+
+    async updateIntegration(token, integrationId, payload) {
+        return this.authenticatedFetch(`/api/client-integrations/${integrationId}`, token, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    }
+
+    async deleteIntegration(token, integrationId) {
+        return this.authenticatedFetch(`/api/client-integrations/${integrationId}`, token, {
+            method: 'DELETE'
         });
     }
 
@@ -102,13 +116,18 @@ class IntegrationsPortalView {
         this.integrationStatus = document.getElementById('client-security-result');
         this.refreshButton = document.getElementById('refresh-admin-clients');
         this.logoutButton = document.getElementById('client-logout');
+        this.logoutTopButton = document.getElementById('client-logout-top');
         this.metricsContainer = document.getElementById('portal-metrics');
         this.reportsContainer = document.getElementById('portal-reports');
         this.integrationsContainer = document.getElementById('admin-clients-list');
 
         this.integrationSelect = document.getElementById('selected-integration');
+        this.integrationEditor = document.getElementById('integration-editor');
         this.credentialsForm = document.getElementById('evolution-credentials-form');
         this.credentialsStatus = document.getElementById('credentials-status');
+
+        this.updateIntegrationButton = document.getElementById('btn-update-integration');
+        this.deleteIntegrationButton = document.getElementById('btn-delete-integration');
 
         this.instanceForm = document.getElementById('instance-form');
         this.instanceStatus = document.getElementById('instance-status');
@@ -128,9 +147,15 @@ class IntegrationsPortalView {
     bindLogin(handler) { this.loginForm?.addEventListener('submit', handler); }
     bindIntegrationSubmit(handler) { this.integrationForm?.addEventListener('submit', handler); }
     bindRefresh(handler) { this.refreshButton?.addEventListener('click', handler); }
-    bindLogout(handler) { this.logoutButton?.addEventListener('click', handler); }
+    bindLogout(handler) {
+        this.logoutButton?.addEventListener('click', handler);
+        this.logoutTopButton?.addEventListener('click', handler);
+    }
     bindCredentialSubmit(handler) { this.credentialsForm?.addEventListener('submit', handler); }
     bindAdvancedSubmit(handler) { this.advancedForm?.addEventListener('submit', handler); }
+    bindIntegrationEditorChange(handler) { this.integrationEditor?.addEventListener('change', handler); }
+    bindIntegrationUpdate(handler) { this.updateIntegrationButton?.addEventListener('click', handler); }
+    bindIntegrationDelete(handler) { this.deleteIntegrationButton?.addEventListener('click', handler); }
 
     bindInstanceActions(actions) {
         this.createButton?.addEventListener('click', actions.onCreate);
@@ -165,7 +190,6 @@ class IntegrationsPortalView {
         const formData = new FormData(this.integrationForm);
         return {
             companyName: (formData.get('companyName') || '').toString().trim(),
-            companyId: (formData.get('companyId') || '').toString().trim(),
             contactEmail: (formData.get('contactEmail') || '').toString().trim(),
             n8nEndpoint: (formData.get('n8nEndpoint') || '').toString().trim(),
             evolutionEndpoint: (formData.get('evolutionEndpoint') || '').toString().trim(),
@@ -173,8 +197,27 @@ class IntegrationsPortalView {
         };
     }
 
+    getEditingIntegrationId() {
+        return (this.integrationEditor?.value || '').trim();
+    }
+
     getSelectedIntegrationId() {
         return (this.integrationSelect?.value || '').trim();
+    }
+
+    fillIntegrationForm(integration) {
+        this.integrationForm.companyName.value = integration?.companyName || '';
+        this.integrationForm.contactEmail.value = integration?.contactEmail || '';
+        this.integrationForm.n8nEndpoint.value = integration?.n8nEndpoint || '';
+        this.integrationForm.evolutionEndpoint.value = integration?.evolutionEndpoint || '';
+        this.integrationForm.securityLevel.value = integration?.securityLevel || '';
+        this.integrationForm.companyId.value = integration?.companyId || 'Será preenchido após salvar';
+    }
+
+    resetIntegrationForm() {
+        this.integrationForm.reset();
+        this.integrationForm.companyId.value = 'Será preenchido após salvar';
+        if (this.integrationEditor) this.integrationEditor.value = '';
     }
 
     getCredentialsPayload() {
@@ -199,28 +242,19 @@ class IntegrationsPortalView {
 
     getAdvancedPayload() {
         const formData = new FormData(this.advancedForm);
-        const method = (formData.get('method') || 'GET').toString();
-        const path = (formData.get('path') || '/').toString().trim();
-        const payloadRaw = (formData.get('payload') || '').toString().trim();
-
         return {
-            method,
-            path,
-            payloadRaw
+            method: (formData.get('method') || 'GET').toString(),
+            path: (formData.get('path') || '/').toString().trim(),
+            payloadRaw: (formData.get('payload') || '').toString().trim()
         };
     }
 
     renderMetrics(metrics = {}) {
-        const totalIntegrations = metrics.totalIntegrations || 0;
-        const totalEvents = metrics.totalEvents || 0;
-        const strictSecurityCount = metrics.strictSecurityCount || 0;
-        const activeCount = metrics.activeCount || 0;
-
         this.metricsContainer.innerHTML = `
-            <div class="metric-card"><h4>${totalIntegrations}</h4><p>Integrações</p></div>
-            <div class="metric-card"><h4>${totalEvents}</h4><p>Eventos de uso</p></div>
-            <div class="metric-card"><h4>${strictSecurityCount}</h4><p>Segurança Strict</p></div>
-            <div class="metric-card"><h4>${activeCount}</h4><p>Status ativo</p></div>
+            <div class="metric-card"><h4>${metrics.totalIntegrations || 0}</h4><p>Integrações</p></div>
+            <div class="metric-card"><h4>${metrics.totalEvents || 0}</h4><p>Eventos de uso</p></div>
+            <div class="metric-card"><h4>${metrics.strictSecurityCount || 0}</h4><p>Segurança Strict</p></div>
+            <div class="metric-card"><h4>${metrics.activeCount || 0}</h4><p>Status ativo</p></div>
         `;
     }
 
@@ -237,6 +271,8 @@ class IntegrationsPortalView {
         if (!integrations.length) {
             this.integrationsContainer.innerHTML = '<p>Nenhuma integração cadastrada até o momento.</p>';
             this.integrationSelect.innerHTML = '<option value="">Sem integrações</option>';
+            this.integrationEditor.innerHTML = '<option value="">Nova integração</option>';
+            this.resetIntegrationForm();
             return;
         }
 
@@ -245,6 +281,13 @@ class IntegrationsPortalView {
                 ${integration.companyName} (${integration.companyId})
             </option>
         `)).join('');
+
+        this.integrationEditor.innerHTML = `
+            <option value="">Nova integração</option>
+            ${integrations.map((integration) => `
+                <option value="${integration.id}">${integration.companyName} (${integration.companyId})</option>
+            `).join('')}
+        `;
 
         this.integrationsContainer.innerHTML = integrations.map((integration) => {
             const lastUsage = integration.usage?.lastEventAt
@@ -289,11 +332,15 @@ class IntegrationsPortalController {
         this.model = model;
         this.view = view;
         this.clientToken = localStorage.getItem('clientPortalToken') || '';
+        this.integrations = [];
     }
 
     init() {
         this.view.bindLogin((event) => this.handleLogin(event));
-        this.view.bindIntegrationSubmit((event) => this.handleIntegrationSubmit(event));
+        this.view.bindIntegrationSubmit((event) => this.handleIntegrationCreate(event));
+        this.view.bindIntegrationUpdate(() => this.handleIntegrationUpdate());
+        this.view.bindIntegrationDelete(() => this.handleIntegrationDelete());
+        this.view.bindIntegrationEditorChange(() => this.handleEditorChange());
         this.view.bindCredentialSubmit((event) => this.handleCredentialSubmit(event));
         this.view.bindAdvancedSubmit((event) => this.handleAdvancedSubmit(event));
         this.view.bindInstanceActions({
@@ -305,6 +352,8 @@ class IntegrationsPortalController {
         });
         this.view.bindRefresh(() => this.loadDashboard());
         this.view.bindLogout(() => this.handleLogout());
+
+        this.view.resetIntegrationForm();
 
         if (this.clientToken) {
             this.restoreSession();
@@ -357,8 +406,53 @@ class IntegrationsPortalController {
         }
     }
 
-    async handleIntegrationSubmit(event) {
+    handleEditorChange() {
+        const id = this.view.getEditingIntegrationId();
+        if (!id) {
+            this.view.resetIntegrationForm();
+            return;
+        }
+
+        const integration = this.integrations.find((item) => item.id === id);
+        if (integration) {
+            this.view.fillIntegrationForm(integration);
+        }
+    }
+
+    async handleIntegrationCreate(event) {
         event.preventDefault();
+        const payload = this.view.getIntegrationPayload();
+        const validationError = this.validatePayload(payload);
+        if (validationError) {
+            this.view.setStatus(this.view.integrationStatus, validationError, 'error');
+            return;
+        }
+
+        try {
+            const response = await this.model.createIntegration(this.clientToken, payload);
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                this.view.setStatus(this.view.integrationStatus, result.message || 'Não foi possível salvar a integração.', 'error');
+                if (response.status === 401) this.clearSession();
+                return;
+            }
+
+            this.view.setStatus(this.view.integrationStatus, `Integração salva com sucesso. ID gerado: ${result.integration.companyId}`, 'success');
+            this.view.resetIntegrationForm();
+            await this.loadDashboard();
+        } catch (error) {
+            console.error(error);
+            this.view.setStatus(this.view.integrationStatus, 'Erro de conexão ao salvar integração.', 'error');
+        }
+    }
+
+    async handleIntegrationUpdate() {
+        const integrationId = this.view.getEditingIntegrationId();
+        if (!integrationId) {
+            this.view.setStatus(this.view.integrationStatus, 'Selecione uma integração para editar.', 'error');
+            return;
+        }
 
         const payload = this.view.getIntegrationPayload();
         const validationError = this.validatePayload(payload);
@@ -368,21 +462,48 @@ class IntegrationsPortalController {
         }
 
         try {
-            const response = await this.model.saveIntegration(this.clientToken, payload);
+            const response = await this.model.updateIntegration(this.clientToken, integrationId, payload);
             const result = await response.json();
-
             if (!response.ok || !result.success) {
-                this.view.setStatus(this.view.integrationStatus, result.message || 'Não foi possível salvar a integração.', 'error');
-                if (response.status === 401) this.clearSession();
+                this.view.setStatus(this.view.integrationStatus, result.message || 'Não foi possível editar a integração.', 'error');
                 return;
             }
 
-            this.view.setStatus(this.view.integrationStatus, 'Integração salva com sucesso.', 'success');
-            this.view.integrationForm.reset();
+            this.view.setStatus(this.view.integrationStatus, 'Integração editada com sucesso.', 'success');
+            await this.loadDashboard();
+            this.view.integrationEditor.value = integrationId;
+            this.handleEditorChange();
+        } catch (error) {
+            console.error(error);
+            this.view.setStatus(this.view.integrationStatus, 'Erro de conexão ao editar integração.', 'error');
+        }
+    }
+
+    async handleIntegrationDelete() {
+        const integrationId = this.view.getEditingIntegrationId();
+        if (!integrationId) {
+            this.view.setStatus(this.view.integrationStatus, 'Selecione uma integração para deletar.', 'error');
+            return;
+        }
+
+        if (!window.confirm('Deseja realmente deletar esta integração?')) {
+            return;
+        }
+
+        try {
+            const response = await this.model.deleteIntegration(this.clientToken, integrationId);
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                this.view.setStatus(this.view.integrationStatus, result.message || 'Não foi possível deletar a integração.', 'error');
+                return;
+            }
+
+            this.view.setStatus(this.view.integrationStatus, 'Integração deletada com sucesso.', 'success');
+            this.view.resetIntegrationForm();
             await this.loadDashboard();
         } catch (error) {
             console.error(error);
-            this.view.setStatus(this.view.integrationStatus, 'Erro de conexão ao salvar integração.', 'error');
+            this.view.setStatus(this.view.integrationStatus, 'Erro de conexão ao deletar integração.', 'error');
         }
     }
 
@@ -525,7 +646,7 @@ class IntegrationsPortalController {
             return;
         }
 
-        let payload = undefined;
+        let payload;
         if (advanced.payloadRaw) {
             try {
                 payload = JSON.parse(advanced.payloadRaw);
@@ -562,9 +683,10 @@ class IntegrationsPortalController {
                 return;
             }
 
+            this.integrations = report.integrations || [];
             this.view.renderMetrics(report.metrics);
             this.view.renderReportSummary(report);
-            this.view.renderIntegrations(report.integrations || []);
+            this.view.renderIntegrations(this.integrations);
         } catch (error) {
             console.error(error);
             this.view.integrationsContainer.innerHTML = '<p>Erro de conexão ao carregar dashboard.</p>';
@@ -586,18 +708,19 @@ class IntegrationsPortalController {
 
     clearSession() {
         this.clientToken = '';
+        this.integrations = [];
         localStorage.removeItem('clientPortalToken');
         this.view.setLocked(true);
+        this.view.resetIntegrationForm();
         this.view.integrationsContainer.innerHTML = '<p>Conecte-se para visualizar relatórios de integrações.</p>';
     }
 
     validatePayload(payload) {
-        const companyIdRegex = /^[A-Za-z0-9_-]{4,40}$/;
         const emailRegex = /^\S+@\S+\.\S+$/;
         const validSecurityLevels = new Set(['strict', 'high', 'standard']);
 
-        if (!payload.companyName || !companyIdRegex.test(payload.companyId)) {
-            return 'Nome da empresa e ID devem ser válidos.';
+        if (!payload.companyName || payload.companyName.length < 3) {
+            return 'Informe um nome da empresa válido.';
         }
 
         if (!emailRegex.test(payload.contactEmail)) {

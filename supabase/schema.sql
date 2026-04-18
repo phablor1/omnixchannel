@@ -4,7 +4,16 @@ create extension if not exists citext;
 do $$
 begin
   if not exists (select 1 from pg_type where typname = 'integration_status') then
-    create type public.integration_status as enum ('pending', 'active', 'error', 'inactive');
+    create type public.integration_status as enum ('pending', 'active', 'error', 'inactive', 'deleted');
+  end if;
+
+
+  if exists (select 1 from pg_type where typname = 'integration_status') then
+    begin
+      alter type public.integration_status add value if not exists 'deleted';
+    exception
+      when duplicate_object then null;
+    end;
   end if;
 
   if not exists (select 1 from pg_type where typname = 'integration_security_level') then
@@ -14,7 +23,7 @@ end $$;
 
 create table if not exists public.client_integrations (
   id uuid primary key default gen_random_uuid(),
-  company_id text not null unique check (company_id ~ '^[A-Za-z0-9_-]{4,40}$'),
+  company_id text not null default ('empresa_' || substring(replace(gen_random_uuid()::text, '-', '') from 1 for 20)) unique check (company_id ~ '^[A-Za-z0-9_-]{4,40}$'),
   company_name text not null check (length(trim(company_name)) >= 3),
   contact_email citext not null check (contact_email ~* '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'),
   product text not null default 'n8n-evolution',
@@ -27,6 +36,10 @@ create table if not exists public.client_integrations (
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
+
+
+alter table public.client_integrations
+  alter column company_id set default ('empresa_' || substring(replace(gen_random_uuid()::text, '-', '') from 1 for 20));
 
 create table if not exists public.integration_secrets (
   id uuid primary key default gen_random_uuid(),

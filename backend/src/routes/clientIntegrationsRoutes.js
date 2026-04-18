@@ -1,6 +1,8 @@
 const express = require('express');
 const {
-  upsertIntegration,
+  createIntegration,
+  updateIntegration,
+  deleteIntegration,
   getIntegrations,
   getIntegrationsReport,
   saveEvolutionCredentials,
@@ -15,7 +17,10 @@ const {
 function buildClientIntegrationsRoutes(requireClientSession) {
   const router = express.Router();
 
-  router.post('/', requireClientSession, upsertIntegration);
+  router.post('/', requireClientSession, createIntegration);
+  router.put('/:integrationId', requireClientSession, updateIntegration);
+  router.delete('/:integrationId', requireClientSession, deleteIntegration);
+
   router.get('/', requireClientSession, getIntegrations);
   router.get('/reports', requireClientSession, getIntegrationsReport);
 

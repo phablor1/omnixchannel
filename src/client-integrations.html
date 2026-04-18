@@ -50,15 +50,24 @@
         <div id="client-area-content" class="client-area-content is-locked" aria-hidden="true">
             <section class="client-area-grid">
                 <article class="client-card">
-                    <h3>Cadastro da Integração</h3>
+                    <div class="admin-header">
+                        <h3>Cadastro da Integração</h3>
+                        <button id="client-logout-top" type="button" class="btn-secondary">Sair / Logout</button>
+                    </div>
+                    <div class="form-group">
+                        <label for="integration-editor">Integração para editar</label>
+                        <select id="integration-editor" name="integrationEditor">
+                            <option value="">Nova integração</option>
+                        </select>
+                    </div>
                     <form id="client-integration-form" class="client-form" novalidate>
                         <div class="form-group">
                             <label for="company-name">Nome da Empresa</label>
                             <input type="text" id="company-name" name="companyName" required maxlength="120" placeholder="Empresa Exemplo LTDA" />
                         </div>
                         <div class="form-group">
-                            <label for="company-id">ID da Empresa</label>
-                            <input type="text" id="company-id" name="companyId" required maxlength="40" pattern="[A-Za-z0-9_-]{4,40}" placeholder="ex: cliente_1234" />
+                            <label for="company-id">ID da Empresa (gerado automaticamente)</label>
+                            <input type="text" id="company-id" name="companyId" readonly disabled placeholder="Será preenchido após salvar" />
                         </div>
                         <div class="form-group">
                             <label for="contact-email">E-mail corporativo</label>
@@ -81,7 +90,11 @@
                                 <option value="standard">Standard</option>
                             </select>
                         </div>
-                        <button type="submit" class="btn-primary portal-button">Salvar Integração</button>
+                        <div class="button-row integration-actions">
+                            <button type="submit" class="btn-primary">Salvar</button>
+                            <button type="button" id="btn-update-integration" class="btn-secondary">Editar</button>
+                            <button type="button" id="btn-delete-integration" class="btn-secondary danger">Deletar</button>
+                        </div>
                         <div id="client-security-result" class="client-security-result" aria-live="polite"></div>
                     </form>
                 </article>
