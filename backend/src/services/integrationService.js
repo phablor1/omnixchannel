@@ -48,6 +48,20 @@ async function listClientIntegrations() {
   return data;
 }
 
+async function getClientIntegrationById(integrationId) {
+  const { data, error } = await supabase
+    .from('client_integrations')
+    .select('id, company_id, company_name, contact_email, evolution_endpoint, status')
+    .eq('id', integrationId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
 
 async function listIntegrationEvents() {
   const { data, error } = await supabase
@@ -61,13 +75,50 @@ async function listIntegrationEvents() {
 
   return data;
 }
-async function registerIntegrationEvent({ clientIntegrationId, companyId, actor }) {
+
+async function registerIntegrationEvent({ clientIntegrationId, companyId, actor, eventType = 'client_integration_upsert', payload = {} }) {
   await supabase.from('integration_events').insert({
     client_integration_id: clientIntegrationId,
-    event_type: 'client_integration_upsert',
+    event_type: eventType,
     source: 'client-portal',
-    payload: { companyId, actor }
+    payload: { companyId, actor, ...payload }
   });
+}
+
+async function upsertIntegrationSecret({ clientIntegrationId, provider, secretKey, metadata = {} }) {
+  const { data, error } = await supabase
+    .from('integration_secrets')
+    .upsert({
+      client_integration_id: clientIntegrationId,
+      provider,
+      secret_key: secretKey,
+      metadata
+    }, {
+      onConflict: 'client_integration_id,provider'
+    })
+    .select('id, client_integration_id, provider, metadata, updated_at')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function getIntegrationSecret(clientIntegrationId, provider) {
+  const { data, error } = await supabase
+    .from('integration_secrets')
+    .select('id, secret_key, metadata, updated_at')
+    .eq('client_integration_id', clientIntegrationId)
+    .eq('provider', provider)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 }
 
 module.exports = {
@@ -75,6 +126,9 @@ module.exports = {
   checkPersistenceHealth,
   upsertClientIntegration,
   listClientIntegrations,
+  getClientIntegrationById,
   listIntegrationEvents,
-  registerIntegrationEvent
+  registerIntegrationEvent,
+  upsertIntegrationSecret,
+  getIntegrationSecret
 };

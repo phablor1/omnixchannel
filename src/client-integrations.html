@@ -25,7 +25,7 @@
     <main class="portal-main" id="portal">
         <section class="portal-hero">
             <h1>Configuração e Gestão de Integrações</h1>
-            <p>Ambiente dedicado para configurar integrações, acompanhar relatórios e visualizar o uso operacional das integrações em dashboard.</p>
+            <p>Ambiente dedicado para gerenciar Evolution API de ponta a ponta: credenciais, criação/conexão de instâncias, QR Code, dashboard e relatórios.</p>
         </section>
 
         <section class="client-login-wrapper" id="client-login-wrapper">
@@ -50,7 +50,7 @@
         <div id="client-area-content" class="client-area-content is-locked" aria-hidden="true">
             <section class="client-area-grid">
                 <article class="client-card">
-                    <h3>Configurar Integração</h3>
+                    <h3>Cadastro da Integração</h3>
                     <form id="client-integration-form" class="client-form" novalidate>
                         <div class="form-group">
                             <label for="company-name">Nome da Empresa</label>
@@ -95,14 +95,84 @@
                 </article>
             </section>
 
+            <section class="client-area-grid admin-grid">
+                <article class="client-card">
+                    <h3>🔑 Credenciais Evolution API</h3>
+                    <form id="evolution-credentials-form" class="client-form" novalidate>
+                        <div class="form-group">
+                            <label for="selected-integration">Integração alvo</label>
+                            <select id="selected-integration" name="integrationId" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="evolution-api-key">API Key Evolution</label>
+                            <input type="password" id="evolution-api-key" name="apiKey" maxlength="300" required placeholder="Cole a API key da Evolution" />
+                        </div>
+                        <button type="submit" class="btn-primary portal-button">Salvar Credencial</button>
+                        <div id="credentials-status" class="client-security-result" aria-live="polite"></div>
+                    </form>
+                </article>
+
+                <article class="client-card">
+                    <h3>⚙️ Operações de Instância</h3>
+                    <form id="instance-form" class="client-form" novalidate>
+                        <div class="form-group">
+                            <label for="instance-name">Nome da instância</label>
+                            <input type="text" id="instance-name" name="instanceName" maxlength="80" required placeholder="cliente-suporte" />
+                        </div>
+                        <div class="form-group">
+                            <label for="instance-token">Token da instância (opcional)</label>
+                            <input type="text" id="instance-token" name="token" maxlength="180" placeholder="token-seguro-opcional" />
+                        </div>
+                        <div class="form-grid-two">
+                            <label><input type="checkbox" id="cfg-qrcode" name="qrcode" checked /> Gerar QRCode</label>
+                            <label><input type="checkbox" id="cfg-read-messages" name="readMessages" /> Ler mensagens</label>
+                            <label><input type="checkbox" id="cfg-always-online" name="alwaysOnline" /> Sempre online</label>
+                            <label><input type="checkbox" id="cfg-sync-history" name="syncFullHistory" /> Sincronizar histórico</label>
+                        </div>
+                        <div class="button-row">
+                            <button type="button" id="btn-create-instance" class="btn-primary">Criar</button>
+                            <button type="button" id="btn-update-instance" class="btn-secondary">Editar</button>
+                            <button type="button" id="btn-delete-instance" class="btn-secondary danger">Deletar</button>
+                            <button type="button" id="btn-qrcode-instance" class="btn-primary">Gerar QR</button>
+                            <button type="button" id="btn-list-instances" class="btn-secondary">Listar</button>
+                        </div>
+                    </form>
+                    <div id="instance-status" class="client-security-result" aria-live="polite"></div>
+                    <pre id="instance-output" class="json-output"></pre>
+                    <div id="qrcode-preview" class="qrcode-preview"></div>
+                </article>
+            </section>
+
             <section id="relatorios" class="client-area-grid admin-grid">
                 <article class="client-card">
                     <div class="admin-header">
-                        <h3>📋 Relatórios e Uso</h3>
+                        <h3>📋 Relatórios e Console Avançado</h3>
                         <button id="client-logout" type="button" class="btn-secondary">Sair</button>
                     </div>
-                    <p>Visão consolidada de integrações e eventos registrados.</p>
+                    <p>Acesse todas as configurações possíveis via proxy seguro da Evolution API.</p>
+                    <form id="advanced-config-form" class="client-form" novalidate>
+                        <div class="form-group">
+                            <label for="advanced-method">Método HTTP</label>
+                            <select id="advanced-method" name="method">
+                                <option>GET</option>
+                                <option>POST</option>
+                                <option>PUT</option>
+                                <option>PATCH</option>
+                                <option>DELETE</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="advanced-path">Path Evolution</label>
+                            <input type="text" id="advanced-path" name="path" maxlength="255" placeholder="/settings/find/cliente-suporte" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="advanced-payload">Payload JSON (opcional)</label>
+                            <textarea id="advanced-payload" name="payload" rows="4" placeholder='{"webhook":{"enabled":true}}'></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary">Executar configuração avançada</button>
+                    </form>
                     <div id="portal-reports" class="portal-reports"></div>
+                    <pre id="advanced-output" class="json-output"></pre>
                     <div id="admin-clients-list" class="admin-clients-list"></div>
                 </article>
             </section>
