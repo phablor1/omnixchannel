@@ -117,6 +117,7 @@ class IntegrationsPortalView {
         this.refreshButton = document.getElementById('refresh-admin-clients');
         this.logoutButton = document.getElementById('client-logout');
         this.logoutTopButton = document.getElementById('client-logout-top');
+        this.logoutGlobalButton = document.getElementById('client-logout-global');
         this.metricsContainer = document.getElementById('portal-metrics');
         this.reportsContainer = document.getElementById('portal-reports');
         this.integrationsContainer = document.getElementById('admin-clients-list');
@@ -150,6 +151,7 @@ class IntegrationsPortalView {
     bindLogout(handler) {
         this.logoutButton?.addEventListener('click', handler);
         this.logoutTopButton?.addEventListener('click', handler);
+        this.logoutGlobalButton?.addEventListener('click', handler);
     }
     bindCredentialSubmit(handler) { this.credentialsForm?.addEventListener('submit', handler); }
     bindAdvancedSubmit(handler) { this.advancedForm?.addEventListener('submit', handler); }
@@ -168,6 +170,7 @@ class IntegrationsPortalView {
     setLocked(isLocked) {
         this.loginWrapper?.classList.toggle('is-hidden', !isLocked);
         this.clientAreaContent?.classList.toggle('is-locked', isLocked);
+        this.logoutGlobalButton?.classList.toggle('is-visible', !isLocked);
     }
 
     setStatus(element, message, type) {
@@ -260,10 +263,15 @@ class IntegrationsPortalView {
 
     renderReportSummary(report) {
         const generatedAt = report.generatedAt ? new Date(report.generatedAt).toLocaleString('pt-BR') : '-';
+        const persistenceMessage = report.persistenceAvailable === false && report.message
+            ? `<p class="client-security-result is-error">${report.message}</p>`
+            : '';
+
         this.reportsContainer.innerHTML = `
             <p><strong>Última geração do relatório:</strong> ${generatedAt}</p>
             <p><strong>Integrações monitoradas:</strong> ${report.integrations?.length || 0}</p>
             <p><strong>Fluxo Evolution habilitado:</strong> CRUD de instâncias, QRCode e proxy avançado.</p>
+            ${persistenceMessage}
         `;
     }
 

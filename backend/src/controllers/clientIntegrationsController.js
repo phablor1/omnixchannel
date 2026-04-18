@@ -66,6 +66,22 @@ function ensurePersistence(req, res) {
   return false;
 }
 
+function buildUnavailableReport() {
+  return {
+    success: true,
+    persistenceAvailable: false,
+    generatedAt: new Date().toISOString(),
+    message: 'Persistência indisponível no momento. Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY para habilitar gravação e relatórios completos.',
+    metrics: {
+      totalIntegrations: 0,
+      totalEvents: 0,
+      strictSecurityCount: 0,
+      activeCount: 0
+    },
+    integrations: []
+  };
+}
+
 function validateIntegrationInput(body = {}) {
   const companyName = sanitizeText(body.companyName, 120);
   const contactEmail = sanitizeText(body.contactEmail, 120).toLowerCase();
@@ -225,8 +241,8 @@ async function deleteIntegration(req, res) {
 }
 
 async function getIntegrations(req, res) {
-  if (!ensurePersistence(req, res)) {
-    return;
+  if (!ensurePersistenceAvailable()) {
+    return res.json(buildUnavailableReport());
   }
 
   try {
@@ -234,16 +250,16 @@ async function getIntegrations(req, res) {
     return res.json({ success: true, integrations: data.map(mapIntegration) });
   } catch (error) {
     console.error(`[${req.requestId}] Erro ao consultar integrações no Supabase:`, error);
-    return res.status(500).json({
-      success: false,
-      message: 'Falha ao consultar integrações no banco.'
+    return res.json({
+      ...buildUnavailableReport(),
+      message: 'Persistência indisponível no momento (falha de conexão com o Supabase).'
     });
   }
 }
 
 async function getIntegrationsReport(req, res) {
-  if (!ensurePersistence(req, res)) {
-    return;
+  if (!ensurePersistenceAvailable()) {
+    return res.json(buildUnavailableReport());
   }
 
   try {
@@ -295,9 +311,9 @@ async function getIntegrationsReport(req, res) {
     });
   } catch (error) {
     console.error(`[${req.requestId}] Erro ao consultar relatório de integrações:`, error);
-    return res.status(500).json({
-      success: false,
-      message: 'Falha ao gerar relatório de integrações.'
+    return res.json({
+      ...buildUnavailableReport(),
+      message: 'Persistência indisponível no momento (falha de conexão com o Supabase).'
     });
   }
 }
