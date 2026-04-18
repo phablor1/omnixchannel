@@ -17,6 +17,15 @@
     margin-bottom: 0.6rem;
 }
 
+.logout-global-button {
+    margin-top: 1rem;
+    display: none;
+}
+
+.logout-global-button.is-visible {
+    display: inline-flex;
+}
+
 .client-card {
     border-radius: 16px;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
