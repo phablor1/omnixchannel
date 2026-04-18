@@ -20,10 +20,10 @@ async function checkPersistenceHealth() {
   }
 }
 
-async function upsertClientIntegration(payload) {
+async function createClientIntegration(payload) {
   const { data, error } = await supabase
     .from('client_integrations')
-    .upsert(payload, { onConflict: 'company_id' })
+    .insert(payload)
     .select('id, company_id, company_name, contact_email, n8n_endpoint, evolution_endpoint, security_level, status, created_at, updated_at')
     .single();
 
@@ -156,7 +156,7 @@ async function getIntegrationSecret(clientIntegrationId, provider) {
 module.exports = {
   ensurePersistenceAvailable,
   checkPersistenceHealth,
-  upsertClientIntegration,
+  createClientIntegration,
   updateClientIntegrationById,
   softDeleteClientIntegration,
   listClientIntegrations,

@@ -1,5 +1,5 @@
 .portal-page {
-    background: #f3f6fb;
+    background: linear-gradient(180deg, #f5f7ff 0%, #eef2ff 100%);
     min-height: 100vh;
 }
 
@@ -8,8 +8,8 @@
 }
 
 .portal-hero {
-    max-width: 860px;
-    margin-bottom: 1.5rem;
+    max-width: 900px;
+    margin-bottom: 1.8rem;
 }
 
 .portal-hero h1 {
@@ -17,9 +17,33 @@
     margin-bottom: 0.6rem;
 }
 
+.client-card {
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    border: 1px solid #e2e8f0;
+}
+
 .portal-button {
     width: 100%;
     justify-content: center;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+}
+
+.integration-actions {
+    margin-top: 0.4rem;
+}
+
+#company-id {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
 }
 
 .portal-metrics {
@@ -80,6 +104,12 @@
 .danger {
     border: 1px solid #dc2626;
     color: #dc2626;
+}
+
+.danger:hover,
+.danger:focus {
+    background: #fee2e2;
+    color: #b91c1c;
 }
 
 .json-output {
