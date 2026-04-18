@@ -1,0 +1,152 @@
+.portal-page {
+    background: linear-gradient(180deg, #f5f7ff 0%, #eef2ff 100%);
+    min-height: 100vh;
+}
+
+.portal-main {
+    padding: 7rem 5% 3rem;
+}
+
+.portal-hero {
+    max-width: 920px;
+    margin-bottom: 1.5rem;
+}
+
+.portal-hero h1 {
+    font-size: 2.2rem;
+    margin-bottom: 0.6rem;
+}
+
+.portal-button {
+    width: 100%;
+    justify-content: center;
+}
+
+.section-heading-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.mode-badge {
+    background: #eef2ff;
+    color: #2b3db2;
+    border-radius: 999px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.form-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.portal-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+.metric-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1rem;
+    background: #fafafa;
+}
+
+.metric-card h4 {
+    color: #4361ee;
+    font-size: 1.6rem;
+}
+
+.metric-card p {
+    font-size: 0.9rem;
+    margin-top: 0.2rem;
+}
+
+.report-toolbar {
+    margin: 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.report-toolbar select {
+    border: 1px solid #d3d7de;
+    border-radius: 10px;
+    padding: 0.45rem 0.8rem;
+}
+
+.portal-reports {
+    margin: 1rem 0;
+    border-left: 3px solid #4361ee;
+    padding-left: 0.8rem;
+}
+
+.integration-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.security-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+    text-transform: uppercase;
+}
+
+.tag-strict {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.tag-high {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.tag-standard {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.integration-actions {
+    margin-top: 0.8rem;
+    display: flex;
+    gap: 0.6rem;
+}
+
+.btn-danger {
+    background: #b42318;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 0.55rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background: #8f1a11;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .form-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .integration-actions {
+        flex-direction: column;
+    }
+}

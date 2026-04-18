@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Portal dedicado para configurações, relatórios e dashboard de integrações." />
+    <title>Portal de Integrações | Omnix Channel</title>
+    <link rel="stylesheet" href="./assets/css/styles.css" />
+    <link rel="stylesheet" href="./assets/css/integrations-portal.css" />
+</head>
+<body class="portal-page">
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">Omnix Channel</div>
+            <ul class="nav-links">
+                <li><a href="./index.html">Início</a></li>
+                <li><a href="#portal">Portal</a></li>
+                <li><a href="#dashboard">Dashboard</a></li>
+                <li><a href="#relatorios">Relatórios</a></li>
+            </ul>
+            <a href="./index.html#contato" class="cta-button">Fale Conosco</a>
+        </nav>
+    </header>
+
+    <main class="portal-main" id="portal">
+        <section class="portal-hero">
+            <h1>Configuração e Gestão de Integrações</h1>
+            <p>Cadastre, edite e remova integrações com total rastreabilidade. Acompanhe métricas de uso em dashboard e relatórios operacionais.</p>
+        </section>
+
+        <section class="client-login-wrapper" id="client-login-wrapper">
+            <article class="client-card client-login-card">
+                <h3>🔐 Acesso do Cliente</h3>
+                <p>Autentique-se para gerenciar integrações com segurança.</p>
+                <form id="client-login-form" class="client-form" novalidate>
+                    <div class="form-group">
+                        <label for="client-username">Usuário</label>
+                        <input type="text" id="client-username" name="username" required maxlength="80" autocomplete="username" placeholder="Seu usuário" />
+                    </div>
+                    <div class="form-group">
+                        <label for="client-password">Senha</label>
+                        <input type="password" id="client-password" name="password" required maxlength="120" autocomplete="current-password" placeholder="Sua senha" />
+                    </div>
+                    <button type="submit" class="btn-primary portal-button">Entrar</button>
+                </form>
+                <div id="client-login-status" class="client-security-result" aria-live="polite"></div>
+            </article>
+        </section>
+
+        <div id="client-area-content" class="client-area-content is-locked" aria-hidden="true">
+            <section class="client-area-grid">
+                <article class="client-card">
+                    <div class="section-heading-inline">
+                        <h3>Cadastro da Integração</h3>
+                        <span id="form-mode-badge" class="mode-badge">Modo: Novo cadastro</span>
+                    </div>
+
+                    <form id="client-integration-form" class="client-form" novalidate>
+                        <input type="hidden" id="integration-id" name="integrationId" />
+                        <div class="form-group">
+                            <label for="company-name">Nome da Empresa</label>
+                            <input type="text" id="company-name" name="companyName" required maxlength="120" placeholder="Empresa Exemplo LTDA" />
+                        </div>
+                        <div class="form-group">
+                            <label for="company-id">ID da Empresa</label>
+                            <input type="text" id="company-id" name="companyId" required maxlength="40" pattern="[A-Za-z0-9_-]{4,40}" placeholder="ex: cliente_1234" />
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-email">E-mail corporativo</label>
+                            <input type="email" id="contact-email" name="contactEmail" required placeholder="contato@suaempresa.com" />
+                        </div>
+                        <div class="form-group">
+                            <label for="n8n-endpoint">Endpoint n8n (HTTPS)</label>
+                            <input type="url" id="n8n-endpoint" name="n8nEndpoint" required placeholder="https://n8n.suaempresa.com/webhook" />
+                        </div>
+                        <div class="form-group">
+                            <label for="evolution-endpoint">Endpoint Evolution API (HTTPS)</label>
+                            <input type="url" id="evolution-endpoint" name="evolutionEndpoint" required placeholder="https://api.suaempresa.com/evolution" />
+                        </div>
+                        <div class="form-group">
+                            <label for="security-level">Nível de segurança</label>
+                            <select id="security-level" name="securityLevel" required>
+                                <option value="">Selecione</option>
+                                <option value="strict">Strict (recomendado)</option>
+                                <option value="high">High</option>
+                                <option value="standard">Standard</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button id="integration-submit-button" type="submit" class="btn-primary portal-button">Salvar Integração</button>
+                            <button id="integration-cancel-button" type="button" class="btn-secondary portal-button is-hidden">Cancelar edição</button>
+                        </div>
+                        <div id="client-security-result" class="client-security-result" aria-live="polite"></div>
+                    </form>
+                </article>
+
+                <article id="dashboard" class="client-card">
+                    <div class="admin-header">
+                        <h3>📊 Dashboard de Integrações</h3>
+                        <button id="refresh-admin-clients" class="btn-primary" type="button">Atualizar</button>
+                    </div>
+                    <div id="portal-metrics" class="portal-metrics" aria-live="polite"></div>
+                </article>
+            </section>
+
+            <section id="relatorios" class="client-area-grid admin-grid">
+                <article class="client-card">
+                    <div class="admin-header">
+                        <h3>📋 Relatórios e Uso</h3>
+                        <button id="client-logout" type="button" class="btn-secondary">Sair / Logout</button>
+                    </div>
+                    <div class="report-toolbar">
+                        <label for="integration-filter">Filtrar por segurança:</label>
+                        <select id="integration-filter">
+                            <option value="all">Todos</option>
+                            <option value="strict">Strict</option>
+                            <option value="high">High</option>
+                            <option value="standard">Standard</option>
+                        </select>
+                    </div>
+                    <div id="portal-reports" class="portal-reports"></div>
+                    <div id="admin-clients-list" class="admin-clients-list"></div>
+                </article>
+            </section>
+        </div>
+    </main>
+
+    <script type="module" src="./assets/js/client-integrations.js"></script>
+</body>
+</html>
