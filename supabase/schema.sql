@@ -25,7 +25,7 @@ create table if not exists public.client_integrations (
   id uuid primary key default gen_random_uuid(),
   company_id text not null default ('empresa_' || substring(replace(gen_random_uuid()::text, '-', '') from 1 for 20)) unique check (company_id ~ '^[A-Za-z0-9_-]{4,40}$'),
   company_name text not null check (length(trim(company_name)) >= 3),
-  contact_email citext not null check (contact_email ~* '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'),
+  contact_email citext not null check (contact_email ~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'),
   product text not null default 'n8n-evolution',
   n8n_endpoint text not null check (left(n8n_endpoint, 8) = 'https://'),
   evolution_endpoint text not null check (left(evolution_endpoint, 8) = 'https://'),
@@ -37,6 +37,13 @@ create table if not exists public.client_integrations (
   deleted_at timestamptz
 );
 
+
+alter table public.client_integrations
+  drop constraint if exists client_integrations_contact_email_check;
+
+alter table public.client_integrations
+  add constraint client_integrations_contact_email_check
+  check (contact_email ~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$');
 
 alter table public.client_integrations
   alter column company_id set default ('empresa_' || substring(replace(gen_random_uuid()::text, '-', '') from 1 for 20));
