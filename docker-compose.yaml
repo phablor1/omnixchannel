@@ -38,15 +38,6 @@ services:
       dockerfile: Dockerfile
     env_file:
       - ./.env
-    environment:
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
-      TO_EMAIL: ${TO_EMAIL:-}
-      SUPABASE_URL: ${SUPABASE_URL:-https://jfxuqbxmelhirymqvldv.supabase.co}
-      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmeHVxYnhtZWxoaXJ5bXF2bGR2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjMzOTI4NywiZXhwIjoyMDkxOTE1Mjg3fQ.RCq6Kr8bYfQuguWJgwqFN8q-sa1C3o3zgiT4mQ4UOgM}
-      PORT: ${PORT:-3000}
     ports:
       - "3000:3000"
     volumes:
