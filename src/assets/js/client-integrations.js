@@ -33,6 +33,52 @@ class IntegrationsApiModel {
         return this.authenticatedFetch('/api/client-integrations/reports', token);
     }
 
+    async saveEvolutionCredentials(token, integrationId, apiKey) {
+        return this.authenticatedFetch(`/api/client-integrations/${integrationId}/evolution/credentials`, token, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ apiKey })
+        });
+    }
+
+    async listEvolutionInstances(token, integrationId) {
+        return this.authenticatedFetch(`/api/client-integrations/${integrationId}/evolution/instances`, token);
+    }
+
+    async createEvolutionInstance(token, integrationId, payload) {
+        return this.authenticatedFetch(`/api/client-integrations/${integrationId}/evolution/instances`, token, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    }
+
+    async updateEvolutionInstance(token, integrationId, instanceName, payload) {
+        return this.authenticatedFetch(`/api/client-integrations/${integrationId}/evolution/instances/${encodeURIComponent(instanceName)}`, token, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    }
+
+    async deleteEvolutionInstance(token, integrationId, instanceName) {
+        return this.authenticatedFetch(`/api/client-integrations/${integrationId}/evolution/instances/${encodeURIComponent(instanceName)}`, token, {
+            method: 'DELETE'
+        });
+    }
+
+    async getEvolutionQrCode(token, integrationId, instanceName) {
+        return this.authenticatedFetch(`/api/client-integrations/${integrationId}/evolution/instances/${encodeURIComponent(instanceName)}/qrcode`, token);
+    }
+
+    async proxyEvolutionConfig(token, integrationId, payload) {
+        return this.authenticatedFetch(`/api/client-integrations/${integrationId}/evolution/proxy`, token, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    }
+
     authenticatedFetch(path, token, options = {}) {
         const headers = {
             Authorization: `Bearer ${token}`,
@@ -59,22 +105,39 @@ class IntegrationsPortalView {
         this.metricsContainer = document.getElementById('portal-metrics');
         this.reportsContainer = document.getElementById('portal-reports');
         this.integrationsContainer = document.getElementById('admin-clients-list');
+
+        this.integrationSelect = document.getElementById('selected-integration');
+        this.credentialsForm = document.getElementById('evolution-credentials-form');
+        this.credentialsStatus = document.getElementById('credentials-status');
+
+        this.instanceForm = document.getElementById('instance-form');
+        this.instanceStatus = document.getElementById('instance-status');
+        this.instanceOutput = document.getElementById('instance-output');
+        this.qrcodePreview = document.getElementById('qrcode-preview');
+
+        this.createButton = document.getElementById('btn-create-instance');
+        this.updateButton = document.getElementById('btn-update-instance');
+        this.deleteButton = document.getElementById('btn-delete-instance');
+        this.qrButton = document.getElementById('btn-qrcode-instance');
+        this.listButton = document.getElementById('btn-list-instances');
+
+        this.advancedForm = document.getElementById('advanced-config-form');
+        this.advancedOutput = document.getElementById('advanced-output');
     }
 
-    bindLogin(handler) {
-        this.loginForm?.addEventListener('submit', handler);
-    }
+    bindLogin(handler) { this.loginForm?.addEventListener('submit', handler); }
+    bindIntegrationSubmit(handler) { this.integrationForm?.addEventListener('submit', handler); }
+    bindRefresh(handler) { this.refreshButton?.addEventListener('click', handler); }
+    bindLogout(handler) { this.logoutButton?.addEventListener('click', handler); }
+    bindCredentialSubmit(handler) { this.credentialsForm?.addEventListener('submit', handler); }
+    bindAdvancedSubmit(handler) { this.advancedForm?.addEventListener('submit', handler); }
 
-    bindIntegrationSubmit(handler) {
-        this.integrationForm?.addEventListener('submit', handler);
-    }
-
-    bindRefresh(handler) {
-        this.refreshButton?.addEventListener('click', handler);
-    }
-
-    bindLogout(handler) {
-        this.logoutButton?.addEventListener('click', handler);
+    bindInstanceActions(actions) {
+        this.createButton?.addEventListener('click', actions.onCreate);
+        this.updateButton?.addEventListener('click', actions.onUpdate);
+        this.deleteButton?.addEventListener('click', actions.onDelete);
+        this.qrButton?.addEventListener('click', actions.onQrCode);
+        this.listButton?.addEventListener('click', actions.onList);
     }
 
     setLocked(isLocked) {
@@ -83,18 +146,11 @@ class IntegrationsPortalView {
     }
 
     setStatus(element, message, type) {
-        if (!element) {
-            return;
-        }
-
+        if (!element) return;
         element.textContent = message;
         element.classList.remove('is-error', 'is-success');
-        if (type === 'error') {
-            element.classList.add('is-error');
-        }
-        if (type === 'success') {
-            element.classList.add('is-success');
-        }
+        if (type === 'error') element.classList.add('is-error');
+        if (type === 'success') element.classList.add('is-success');
     }
 
     getLoginCredentials() {
@@ -117,6 +173,43 @@ class IntegrationsPortalView {
         };
     }
 
+    getSelectedIntegrationId() {
+        return (this.integrationSelect?.value || '').trim();
+    }
+
+    getCredentialsPayload() {
+        const formData = new FormData(this.credentialsForm);
+        return {
+            integrationId: (formData.get('integrationId') || '').toString().trim(),
+            apiKey: (formData.get('apiKey') || '').toString().trim()
+        };
+    }
+
+    getInstancePayload() {
+        const formData = new FormData(this.instanceForm);
+        return {
+            instanceName: (formData.get('instanceName') || '').toString().trim(),
+            token: (formData.get('token') || '').toString().trim(),
+            qrcode: formData.get('qrcode') === 'on',
+            readMessages: formData.get('readMessages') === 'on',
+            alwaysOnline: formData.get('alwaysOnline') === 'on',
+            syncFullHistory: formData.get('syncFullHistory') === 'on'
+        };
+    }
+
+    getAdvancedPayload() {
+        const formData = new FormData(this.advancedForm);
+        const method = (formData.get('method') || 'GET').toString();
+        const path = (formData.get('path') || '/').toString().trim();
+        const payloadRaw = (formData.get('payload') || '').toString().trim();
+
+        return {
+            method,
+            path,
+            payloadRaw
+        };
+    }
+
     renderMetrics(metrics = {}) {
         const totalIntegrations = metrics.totalIntegrations || 0;
         const totalEvents = metrics.totalEvents || 0;
@@ -132,21 +225,26 @@ class IntegrationsPortalView {
     }
 
     renderReportSummary(report) {
-        const generatedAt = report.generatedAt
-            ? new Date(report.generatedAt).toLocaleString('pt-BR')
-            : '-';
-
+        const generatedAt = report.generatedAt ? new Date(report.generatedAt).toLocaleString('pt-BR') : '-';
         this.reportsContainer.innerHTML = `
             <p><strong>Última geração do relatório:</strong> ${generatedAt}</p>
             <p><strong>Integrações monitoradas:</strong> ${report.integrations?.length || 0}</p>
+            <p><strong>Fluxo Evolution habilitado:</strong> CRUD de instâncias, QRCode e proxy avançado.</p>
         `;
     }
 
     renderIntegrations(integrations = []) {
         if (!integrations.length) {
             this.integrationsContainer.innerHTML = '<p>Nenhuma integração cadastrada até o momento.</p>';
+            this.integrationSelect.innerHTML = '<option value="">Sem integrações</option>';
             return;
         }
+
+        this.integrationSelect.innerHTML = integrations.map((integration, index) => (`
+            <option value="${integration.id}" ${index === 0 ? 'selected' : ''}>
+                ${integration.companyName} (${integration.companyId})
+            </option>
+        `)).join('');
 
         this.integrationsContainer.innerHTML = integrations.map((integration) => {
             const lastUsage = integration.usage?.lastEventAt
@@ -166,6 +264,24 @@ class IntegrationsPortalView {
             `;
         }).join('');
     }
+
+    renderJsonOutput(element, value) {
+        if (!element) return;
+        element.textContent = JSON.stringify(value || {}, null, 2);
+    }
+
+    renderQrCode(qrCodeData) {
+        this.qrcodePreview.innerHTML = '';
+        const possibleBase64 = qrCodeData?.base64 || qrCodeData?.qrcode?.base64 || qrCodeData?.code;
+
+        if (!possibleBase64) {
+            this.qrcodePreview.innerHTML = '<p>QR Code indisponível na resposta.</p>';
+            return;
+        }
+
+        const src = possibleBase64.startsWith('data:image') ? possibleBase64 : `data:image/png;base64,${possibleBase64}`;
+        this.qrcodePreview.innerHTML = `<img src="${src}" alt="QR Code da instância" class="qrcode-image" />`;
+    }
 }
 
 class IntegrationsPortalController {
@@ -178,6 +294,15 @@ class IntegrationsPortalController {
     init() {
         this.view.bindLogin((event) => this.handleLogin(event));
         this.view.bindIntegrationSubmit((event) => this.handleIntegrationSubmit(event));
+        this.view.bindCredentialSubmit((event) => this.handleCredentialSubmit(event));
+        this.view.bindAdvancedSubmit((event) => this.handleAdvancedSubmit(event));
+        this.view.bindInstanceActions({
+            onCreate: () => this.handleInstanceCreate(),
+            onUpdate: () => this.handleInstanceUpdate(),
+            onDelete: () => this.handleInstanceDelete(),
+            onQrCode: () => this.handleInstanceQrCode(),
+            onList: () => this.handleInstanceList()
+        });
         this.view.bindRefresh(() => this.loadDashboard());
         this.view.bindLogout(() => this.handleLogout());
 
@@ -248,9 +373,7 @@ class IntegrationsPortalController {
 
             if (!response.ok || !result.success) {
                 this.view.setStatus(this.view.integrationStatus, result.message || 'Não foi possível salvar a integração.', 'error');
-                if (response.status === 401) {
-                    this.clearSession();
-                }
+                if (response.status === 401) this.clearSession();
                 return;
             }
 
@@ -263,6 +386,169 @@ class IntegrationsPortalController {
         }
     }
 
+    async handleCredentialSubmit(event) {
+        event.preventDefault();
+        const payload = this.view.getCredentialsPayload();
+
+        if (!payload.integrationId || !payload.apiKey) {
+            this.view.setStatus(this.view.credentialsStatus, 'Selecione a integração e informe a API Key.', 'error');
+            return;
+        }
+
+        try {
+            const response = await this.model.saveEvolutionCredentials(this.clientToken, payload.integrationId, payload.apiKey);
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                this.view.setStatus(this.view.credentialsStatus, result.message || 'Falha ao salvar credencial.', 'error');
+                return;
+            }
+
+            this.view.setStatus(this.view.credentialsStatus, 'Credencial salva com sucesso.', 'success');
+            this.view.credentialsForm.reset();
+            await this.loadDashboard();
+        } catch (error) {
+            console.error(error);
+            this.view.setStatus(this.view.credentialsStatus, 'Erro ao salvar credencial da Evolution.', 'error');
+        }
+    }
+
+    async handleInstanceCreate() {
+        const integrationId = this.view.getSelectedIntegrationId();
+        const payload = this.view.getInstancePayload();
+
+        if (!integrationId || !payload.instanceName) {
+            this.view.setStatus(this.view.instanceStatus, 'Selecione uma integração e informe o nome da instância.', 'error');
+            return;
+        }
+
+        await this.executeInstanceRequest(
+            () => this.model.createEvolutionInstance(this.clientToken, integrationId, payload),
+            'Instância criada com sucesso.'
+        );
+    }
+
+    async handleInstanceUpdate() {
+        const integrationId = this.view.getSelectedIntegrationId();
+        const payload = this.view.getInstancePayload();
+
+        if (!integrationId || !payload.instanceName) {
+            this.view.setStatus(this.view.instanceStatus, 'Selecione uma integração e informe o nome da instância.', 'error');
+            return;
+        }
+
+        await this.executeInstanceRequest(
+            () => this.model.updateEvolutionInstance(this.clientToken, integrationId, payload.instanceName, payload),
+            'Instância atualizada com sucesso.'
+        );
+    }
+
+    async handleInstanceDelete() {
+        const integrationId = this.view.getSelectedIntegrationId();
+        const payload = this.view.getInstancePayload();
+
+        if (!integrationId || !payload.instanceName) {
+            this.view.setStatus(this.view.instanceStatus, 'Selecione uma integração e informe o nome da instância.', 'error');
+            return;
+        }
+
+        await this.executeInstanceRequest(
+            () => this.model.deleteEvolutionInstance(this.clientToken, integrationId, payload.instanceName),
+            'Instância removida com sucesso.'
+        );
+    }
+
+    async handleInstanceList() {
+        const integrationId = this.view.getSelectedIntegrationId();
+        if (!integrationId) {
+            this.view.setStatus(this.view.instanceStatus, 'Selecione uma integração.', 'error');
+            return;
+        }
+
+        await this.executeInstanceRequest(
+            () => this.model.listEvolutionInstances(this.clientToken, integrationId),
+            'Instâncias listadas com sucesso.'
+        );
+    }
+
+    async handleInstanceQrCode() {
+        const integrationId = this.view.getSelectedIntegrationId();
+        const payload = this.view.getInstancePayload();
+
+        if (!integrationId || !payload.instanceName) {
+            this.view.setStatus(this.view.instanceStatus, 'Selecione uma integração e informe o nome da instância.', 'error');
+            return;
+        }
+
+        try {
+            const response = await this.model.getEvolutionQrCode(this.clientToken, integrationId, payload.instanceName);
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                this.view.setStatus(this.view.instanceStatus, result.message || 'Falha ao gerar QR Code.', 'error');
+                this.view.renderJsonOutput(this.view.instanceOutput, result);
+                return;
+            }
+
+            this.view.setStatus(this.view.instanceStatus, 'QR Code gerado com sucesso.', 'success');
+            this.view.renderJsonOutput(this.view.instanceOutput, result);
+            this.view.renderQrCode(result.data);
+        } catch (error) {
+            console.error(error);
+            this.view.setStatus(this.view.instanceStatus, 'Erro ao obter QR Code da instância.', 'error');
+        }
+    }
+
+    async executeInstanceRequest(requestFn, successMessage) {
+        try {
+            const response = await requestFn();
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                this.view.setStatus(this.view.instanceStatus, result.message || 'Operação na instância falhou.', 'error');
+                this.view.renderJsonOutput(this.view.instanceOutput, result);
+                return;
+            }
+
+            this.view.setStatus(this.view.instanceStatus, successMessage, 'success');
+            this.view.renderJsonOutput(this.view.instanceOutput, result);
+        } catch (error) {
+            console.error(error);
+            this.view.setStatus(this.view.instanceStatus, 'Erro de conexão com Evolution API.', 'error');
+        }
+    }
+
+    async handleAdvancedSubmit(event) {
+        event.preventDefault();
+        const integrationId = this.view.getSelectedIntegrationId();
+        const advanced = this.view.getAdvancedPayload();
+
+        if (!integrationId || !advanced.path) {
+            this.view.renderJsonOutput(this.view.advancedOutput, { error: 'Selecione integração e path válido.' });
+            return;
+        }
+
+        let payload = undefined;
+        if (advanced.payloadRaw) {
+            try {
+                payload = JSON.parse(advanced.payloadRaw);
+            } catch (_error) {
+                this.view.renderJsonOutput(this.view.advancedOutput, { error: 'Payload JSON inválido.' });
+                return;
+            }
+        }
+
+        try {
+            const response = await this.model.proxyEvolutionConfig(this.clientToken, integrationId, {
+                method: advanced.method,
+                path: advanced.path,
+                payload
+            });
+            const result = await response.json();
+            this.view.renderJsonOutput(this.view.advancedOutput, result);
+        } catch (error) {
+            console.error(error);
+            this.view.renderJsonOutput(this.view.advancedOutput, { error: 'Erro ao executar configuração avançada.' });
+        }
+    }
+
     async loadDashboard() {
         this.view.integrationsContainer.innerHTML = '<p>Atualizando dashboard...</p>';
 
@@ -272,9 +558,7 @@ class IntegrationsPortalController {
 
             if (!response.ok || !report.success) {
                 this.view.integrationsContainer.innerHTML = `<p>${report.message || 'Não foi possível carregar relatórios.'}</p>`;
-                if (response.status === 401) {
-                    this.clearSession();
-                }
+                if (response.status === 401) this.clearSession();
                 return;
             }
 
