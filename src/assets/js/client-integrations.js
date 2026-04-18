@@ -253,11 +253,44 @@ class IntegrationsPortalView {
     }
 
     renderMetrics(metrics = {}) {
+        const totalIntegrations = Number(metrics.totalIntegrations) || 0;
+        const totalEvents = Number(metrics.totalEvents) || 0;
+        const strictSecurityCount = Number(metrics.strictSecurityCount) || 0;
+        const activeCount = Number(metrics.activeCount) || 0;
+
+        const chartSource = [
+            { label: 'Integrações', value: totalIntegrations },
+            { label: 'Eventos', value: totalEvents },
+            { label: 'Strict', value: strictSecurityCount },
+            { label: 'Ativos', value: activeCount }
+        ];
+
+        const maxValue = Math.max(...chartSource.map((item) => item.value), 1);
+        const chartRows = chartSource.map((item) => {
+            const percentage = Math.max(8, Math.round((item.value / maxValue) * 100));
+            return `
+                <div class="chart-row">
+                    <span class="chart-row-label">${item.label}</span>
+                    <span class="chart-row-track">
+                        <span class="chart-row-fill" style="width: ${percentage}%"></span>
+                    </span>
+                    <span class="chart-row-value">${item.value}</span>
+                </div>
+            `;
+        }).join('');
+
         this.metricsContainer.innerHTML = `
-            <div class="metric-card"><h4>${metrics.totalIntegrations || 0}</h4><p>Integrações</p></div>
-            <div class="metric-card"><h4>${metrics.totalEvents || 0}</h4><p>Eventos de uso</p></div>
-            <div class="metric-card"><h4>${metrics.strictSecurityCount || 0}</h4><p>Segurança Strict</p></div>
-            <div class="metric-card"><h4>${metrics.activeCount || 0}</h4><p>Status ativo</p></div>
+            <div class="metric-card"><h4>${totalIntegrations}</h4><p>Integrações</p></div>
+            <div class="metric-card"><h4>${totalEvents}</h4><p>Eventos de uso</p></div>
+            <div class="metric-card"><h4>${strictSecurityCount}</h4><p>Segurança Strict</p></div>
+            <div class="metric-card"><h4>${activeCount}</h4><p>Status ativo</p></div>
+            <article class="dashboard-chart-card">
+                <div class="dashboard-chart-head">
+                    <h4>Performance de integrações</h4>
+                    <span>Atualização em tempo real</span>
+                </div>
+                <div class="dashboard-chart-bars">${chartRows}</div>
+            </article>
         `;
     }
 

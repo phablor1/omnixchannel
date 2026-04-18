@@ -81,9 +81,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
             padding: 1rem 5%;
             max-width: 1400px;
             margin: 0 auto;
+            gap: 0.8rem 1.2rem;
         }
 
         .logo {
@@ -209,6 +211,7 @@
 
         .hero-buttons {
             display: flex;
+            flex-wrap: wrap;
             gap: 1rem;
             opacity: 0;
             animation: slideInUp 1s ease 0.9s forwards;
@@ -532,7 +535,7 @@
 
         .showcase-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 3rem;
             margin-bottom: 3rem;
         }
@@ -544,6 +547,7 @@
             box-shadow: var(--shadow-light);
             transition: all var(--transition-speed) ease;
             border: 1px solid var(--border-color);
+            overflow: hidden;
         }
 
         .showcase-item:hover,
@@ -596,7 +600,7 @@
             background: #25d366;
             border-radius: 15px;
             overflow: hidden;
-            max-width: 300px;
+            width: min(300px, 100%);
             margin-top: 1rem;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
@@ -656,7 +660,7 @@
             border-radius: 15px;
             padding: 1.5rem;
             color: var(--white);
-            max-width: 300px;
+            width: min(300px, 100%);
             margin-top: 1rem;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
@@ -913,9 +917,17 @@
             .nav-links {
                 display: none;
             }
+            .nav {
+                justify-content: center;
+            }
+            .cta-button {
+                width: min(280px, 100%);
+                text-align: center;
+            }
             .hero-content {
                 grid-template-columns: 1fr;
                 text-align: center;
+                padding-top: 6rem;
             }
             .hero-text h1 {
                 font-size: 2.5rem;
@@ -926,6 +938,11 @@
             .hero-buttons {
                 flex-direction: column;
                 align-items: center;
+            }
+            .btn-primary,
+            .btn-secondary {
+                width: min(320px, 100%);
+                justify-content: center;
             }
             .showcase-grid {
                 grid-template-columns: 1fr;
@@ -938,6 +955,38 @@
             }
             .section-header h2 {
                 font-size: 2rem;
+            }
+            .client-card {
+                padding: 1.2rem;
+            }
+            .client-form input,
+            .client-form select,
+            .client-form textarea {
+                font-size: 0.95rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                min-height: auto;
+                padding: 6.5rem 0 2.5rem;
+            }
+            .hero-text h1 {
+                font-size: 2rem;
+            }
+            .features-grid,
+            .automation-grid {
+                grid-template-columns: 1fr;
+            }
+            .feature-card,
+            .automation-card {
+                padding: 1.4rem;
+            }
+            .roi-calculator {
+                padding: 1.4rem;
+            }
+            .roi-text h3 {
+                font-size: 1.5rem;
             }
         }
 
@@ -1110,4 +1159,3 @@
                 align-items: flex-start;
             }
         }
-
