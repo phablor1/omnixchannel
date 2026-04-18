@@ -1,3 +1,25 @@
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
+
+const dotenvCandidates = [
+  process.env.DOTENV_CONFIG_PATH,
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(__dirname, '../../../.env'),
+  '/app/.env'
+].filter(Boolean);
+
+dotenvCandidates.forEach((dotenvPath) => {
+  if (fs.existsSync(dotenvPath)) {
+    dotenv.config({ path: dotenvPath, override: false });
+  }
+});
+
+function normalizeEnvValue(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 const env = {
   PORT: Number(process.env.PORT || 3000),
   NODE_ENV: process.env.NODE_ENV || 'development',
@@ -5,8 +27,10 @@ const env = {
   CLIENT_PORTAL_USERNAME: process.env.CLIENT_PORTAL_USERNAME || 'cliente',
   CLIENT_PORTAL_PASSWORD: process.env.CLIENT_PORTAL_PASSWORD || 'troque-esta-senha',
   SESSION_TTL_MS: Number(process.env.CLIENT_PORTAL_SESSION_TTL_MS || 30 * 60 * 1000),
-  SUPABASE_URL: process.env.SUPABASE_URL || '',
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  SUPABASE_URL: normalizeEnvValue(process.env.SUPABASE_URL || process.env.SUPABSE_URL || ''),
+  SUPABASE_SERVICE_ROLE_KEY: normalizeEnvValue(
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABSE_SERVICE_ROLE_KEY || ''
+  ),
   SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
   SMTP_PORT: Number(process.env.SMTP_PORT) || 587,
   SMTP_USER: process.env.SMTP_USER || '',

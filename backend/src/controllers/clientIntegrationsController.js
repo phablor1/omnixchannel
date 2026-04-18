@@ -66,6 +66,22 @@ function ensurePersistence(req, res) {
   return false;
 }
 
+function buildUnavailableReport() {
+  return {
+    success: true,
+    persistenceAvailable: false,
+    generatedAt: new Date().toISOString(),
+    message: 'Persistência indisponível no momento. Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY para habilitar gravação e relatórios completos.',
+    metrics: {
+      totalIntegrations: 0,
+      totalEvents: 0,
+      strictSecurityCount: 0,
+      activeCount: 0
+    },
+    integrations: []
+  };
+}
+
 function validateIntegrationInput(body = {}) {
   const companyName = sanitizeText(body.companyName, 120);
   const contactEmail = sanitizeText(body.contactEmail, 120).toLowerCase();
@@ -225,8 +241,8 @@ async function deleteIntegration(req, res) {
 }
 
 async function getIntegrations(req, res) {
-  if (!ensurePersistence(req, res)) {
-    return;
+  if (!ensurePersistenceAvailable()) {
+    return res.json(buildUnavailableReport());
   }
 
   try {
@@ -242,8 +258,8 @@ async function getIntegrations(req, res) {
 }
 
 async function getIntegrationsReport(req, res) {
-  if (!ensurePersistence(req, res)) {
-    return;
+  if (!ensurePersistenceAvailable()) {
+    return res.json(buildUnavailableReport());
   }
 
   try {
