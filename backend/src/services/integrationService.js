@@ -34,6 +34,38 @@ async function upsertClientIntegration(payload) {
   return data;
 }
 
+async function updateClientIntegrationById(id, payload) {
+  const { data, error } = await supabase
+    .from('client_integrations')
+    .update(payload)
+    .eq('id', id)
+    .is('deleted_at', null)
+    .select('id, company_id, company_name, contact_email, n8n_endpoint, evolution_endpoint, security_level, status, created_at, updated_at')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function softDeleteClientIntegration(id) {
+  const { data, error } = await supabase
+    .from('client_integrations')
+    .update({ deleted_at: new Date().toISOString(), status: 'deleted' })
+    .eq('id', id)
+    .is('deleted_at', null)
+    .select('id, company_id, company_name')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 async function listClientIntegrations() {
   const { data, error } = await supabase
     .from('client_integrations')
@@ -125,6 +157,8 @@ module.exports = {
   ensurePersistenceAvailable,
   checkPersistenceHealth,
   upsertClientIntegration,
+  updateClientIntegrationById,
+  softDeleteClientIntegration,
   listClientIntegrations,
   getClientIntegrationById,
   listIntegrationEvents,

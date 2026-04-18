@@ -1,6 +1,8 @@
 const {
   ensurePersistenceAvailable,
   upsertClientIntegration,
+  updateClientIntegrationById,
+  softDeleteClientIntegration,
   listClientIntegrations,
   listIntegrationEvents,
   registerIntegrationEvent,
@@ -88,45 +90,88 @@ async function upsertIntegration(req, res) {
   const validLevels = new Set(['strict', 'high', 'standard']);
 
   if (!companyName || !companyIdRegex.test(companyId)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Dados da empresa inválidos. Revise nome e ID.'
-    });
+    return { error: 'Dados da empresa inválidos. Revise nome e ID.' };
   }
 
   if (!/^\S+@\S+\.\S+$/.test(contactEmail)) {
-    return res.status(400).json({ success: false, message: 'E-mail corporativo inválido.' });
+    return { error: 'E-mail corporativo inválido.' };
   }
 
   if (!isSecureHttpsUrl(n8nEndpoint) || !isSecureHttpsUrl(evolutionEndpoint)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Endpoints devem ser URLs HTTPS válidas.'
-    });
+    return { error: 'Endpoints devem ser URLs HTTPS válidas.' };
   }
 
   if (!validLevels.has(securityLevel)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Nível de segurança inválido.'
-    });
+    return { error: 'Nível de segurança inválido.' };
   }
 
-  const payload = {
-    company_id: companyId,
-    company_name: companyName,
-    contact_email: contactEmail,
-    n8n_endpoint: n8nEndpoint,
-    evolution_endpoint: evolutionEndpoint,
-    security_level: securityLevel
+  return {
+    payload: {
+      company_id: companyId,
+      company_name: companyName,
+      contact_email: contactEmail,
+      n8n_endpoint: n8nEndpoint,
+      evolution_endpoint: evolutionEndpoint,
+      security_level: securityLevel
+    }
   };
+}
+
+function buildUsageByIntegration(events = []) {
+  return events.reduce((acc, event) => {
+    const key = event.client_integration_id;
+    if (!key) {
+      return acc;
+    }
+
+    const current = acc.get(key) || {
+      eventCount: 0,
+      lastEventAt: null,
+      lastEventType: null
+    };
+
+    current.eventCount += 1;
+
+    if (!current.lastEventAt || new Date(event.created_at) > new Date(current.lastEventAt)) {
+      current.lastEventAt = event.created_at;
+      current.lastEventType = event.event_type || 'unknown';
+    }
+
+    acc.set(key, current);
+    return acc;
+  }, new Map());
+}
+
+function ensurePersistence(req, res) {
+  if (ensurePersistenceAvailable()) {
+    return true;
+  }
+
+  res.status(503).json({
+    success: false,
+    message: 'Persistência indisponível. Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.'
+  });
+
+  return false;
+}
+
+async function upsertIntegration(req, res) {
+  if (!ensurePersistence(req, res)) {
+    return;
+  }
+
+  const validation = validateIntegrationInput(req.body);
+  if (validation.error) {
+    return res.status(400).json({ success: false, message: validation.error });
+  }
 
   try {
-    const data = await upsertClientIntegration(payload);
+    const data = await upsertClientIntegration(validation.payload);
     await registerIntegrationEvent({
       clientIntegrationId: data.id,
-      companyId,
-      actor: req.session.username
+      companyId: data.company_id,
+      actor: req.session.username,
+      eventType: 'client_integration_create'
     });
 
     return res.status(201).json({
@@ -143,12 +188,80 @@ async function upsertIntegration(req, res) {
   }
 }
 
-async function getIntegrations(req, res) {
-  if (!ensurePersistenceAvailable()) {
-    return res.status(503).json({
-      success: false,
-      message: 'Persistência indisponível. Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.'
+async function updateIntegration(req, res) {
+  if (!ensurePersistence(req, res)) {
+    return;
+  }
+
+  const integrationId = sanitizeText(req.params.integrationId, 80);
+  if (!integrationId) {
+    return res.status(400).json({ success: false, message: 'ID da integração é obrigatório.' });
+  }
+
+  const validation = validateIntegrationInput(req.body);
+  if (validation.error) {
+    return res.status(400).json({ success: false, message: validation.error });
+  }
+
+  try {
+    const data = await updateClientIntegrationById(integrationId, validation.payload);
+    await registerIntegrationEvent({
+      clientIntegrationId: data.id,
+      companyId: data.company_id,
+      actor: req.session.username,
+      eventType: 'client_integration_update'
     });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Integração atualizada com sucesso.',
+      integration: mapIntegration(data)
+    });
+  } catch (error) {
+    console.error(`[${req.requestId}] Erro ao atualizar integração no Supabase:`, error);
+    return res.status(500).json({
+      success: false,
+      message: 'Falha ao atualizar integração no banco.'
+    });
+  }
+}
+
+async function deleteIntegration(req, res) {
+  if (!ensurePersistence(req, res)) {
+    return;
+  }
+
+  const integrationId = sanitizeText(req.params.integrationId, 80);
+  if (!integrationId) {
+    return res.status(400).json({ success: false, message: 'ID da integração é obrigatório.' });
+  }
+
+  try {
+    const data = await softDeleteClientIntegration(integrationId);
+
+    await registerIntegrationEvent({
+      clientIntegrationId: data.id,
+      companyId: data.company_id,
+      actor: req.session.username,
+      eventType: 'client_integration_delete'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Integração deletada com sucesso.'
+    });
+  } catch (error) {
+    console.error(`[${req.requestId}] Erro ao deletar integração no Supabase:`, error);
+    return res.status(500).json({
+      success: false,
+      message: 'Falha ao deletar integração no banco.'
+    });
+  }
+}
+
+async function getIntegrations(req, res) {
+  if (!ensurePersistence(req, res)) {
+    return;
   }
 
   try {
