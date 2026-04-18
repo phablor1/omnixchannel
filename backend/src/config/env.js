@@ -1,20 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-const dotenv = require('dotenv');
-
-const dotenvCandidates = [
-  process.env.DOTENV_CONFIG_PATH,
-  path.resolve(process.cwd(), '.env'),
-  path.resolve(__dirname, '../../.env'),
-  path.resolve(__dirname, '../../../.env'),
-  '/app/.env'
-].filter(Boolean);
-
-dotenvCandidates.forEach((dotenvPath) => {
-  if (fs.existsSync(dotenvPath)) {
-    dotenv.config({ path: dotenvPath, override: false });
-  }
-});
+require('dotenv').config();
 
 function normalizeEnvValue(value) {
   return typeof value === 'string' ? value.trim() : '';
