@@ -954,6 +954,13 @@
                 width: min(280px, 100%);
                 text-align: center;
             }
+            .nav {
+                justify-content: center;
+            }
+            .cta-button {
+                width: min(280px, 100%);
+                text-align: center;
+            }
             .hero-content {
                 grid-template-columns: 1fr;
                 text-align: center;
