@@ -263,10 +263,15 @@ class IntegrationsPortalView {
 
     renderReportSummary(report) {
         const generatedAt = report.generatedAt ? new Date(report.generatedAt).toLocaleString('pt-BR') : '-';
+        const persistenceMessage = report.persistenceAvailable === false && report.message
+            ? `<p class="client-security-result is-error">${report.message}</p>`
+            : '';
+
         this.reportsContainer.innerHTML = `
             <p><strong>Última geração do relatório:</strong> ${generatedAt}</p>
             <p><strong>Integrações monitoradas:</strong> ${report.integrations?.length || 0}</p>
             <p><strong>Fluxo Evolution habilitado:</strong> CRUD de instâncias, QRCode e proxy avançado.</p>
+            ${persistenceMessage}
         `;
     }
 
