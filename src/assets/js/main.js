@@ -6,10 +6,31 @@ class ConectXIPApp {
         this.clientToken = localStorage.getItem('clientPortalToken') || '';
 
         this.initSmoothScroll();
+        this.initMobileNav();
         this.initHeaderScrollEffect();
         this.initObserver();
         this.initContactForm();
         this.initClientArea();
+    }
+
+    initMobileNav() {
+        const navToggle = document.querySelector('.nav-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        if (!navToggle || !navLinks) {
+            return;
+        }
+
+        navToggle.addEventListener('click', () => {
+            const isOpen = navLinks.classList.toggle('is-open');
+            navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('is-open');
+                navToggle.setAttribute('aria-expanded', 'false');
+            });
+        });
     }
 
     initSmoothScroll() {

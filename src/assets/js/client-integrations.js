@@ -108,6 +108,8 @@ class IntegrationsApiModel {
 
 class IntegrationsPortalView {
     constructor() {
+        this.navToggle = document.querySelector('.nav-toggle');
+        this.navLinks = document.querySelector('.nav-links');
         this.loginWrapper = document.getElementById('client-login-wrapper');
         this.loginForm = document.getElementById('client-login-form');
         this.loginStatus = document.getElementById('client-login-status');
@@ -143,6 +145,22 @@ class IntegrationsPortalView {
 
         this.advancedForm = document.getElementById('advanced-config-form');
         this.advancedOutput = document.getElementById('advanced-output');
+    }
+
+    bindMobileNav() {
+        if (!this.navToggle || !this.navLinks) return;
+
+        this.navToggle.addEventListener('click', () => {
+            const isOpen = this.navLinks.classList.toggle('is-open');
+            this.navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        this.navLinks.querySelectorAll('a').forEach((link) => {
+            link.addEventListener('click', () => {
+                this.navLinks.classList.remove('is-open');
+                this.navToggle.setAttribute('aria-expanded', 'false');
+            });
+        });
     }
 
     bindLogin(handler) { this.loginForm?.addEventListener('submit', handler); }
@@ -377,6 +395,7 @@ class IntegrationsPortalController {
     }
 
     init() {
+        this.view.bindMobileNav();
         this.view.bindLogin((event) => this.handleLogin(event));
         this.view.bindIntegrationSubmit((event) => this.handleIntegrationCreate(event));
         this.view.bindIntegrationUpdate(() => this.handleIntegrationUpdate());
