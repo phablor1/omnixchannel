@@ -250,9 +250,9 @@ async function getIntegrations(req, res) {
     return res.json({ success: true, integrations: data.map(mapIntegration) });
   } catch (error) {
     console.error(`[${req.requestId}] Erro ao consultar integrações no Supabase:`, error);
-    return res.status(500).json({
-      success: false,
-      message: 'Falha ao consultar integrações no banco.'
+    return res.json({
+      ...buildUnavailableReport(),
+      message: 'Persistência indisponível no momento (falha de conexão com o Supabase).'
     });
   }
 }
@@ -311,9 +311,9 @@ async function getIntegrationsReport(req, res) {
     });
   } catch (error) {
     console.error(`[${req.requestId}] Erro ao consultar relatório de integrações:`, error);
-    return res.status(500).json({
-      success: false,
-      message: 'Falha ao gerar relatório de integrações.'
+    return res.json({
+      ...buildUnavailableReport(),
+      message: 'Persistência indisponível no momento (falha de conexão com o Supabase).'
     });
   }
 }
