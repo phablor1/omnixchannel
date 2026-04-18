@@ -44,6 +44,8 @@ services:
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASS=${SMTP_PASS}
       - TO_EMAIL=${TO_EMAIL}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - PORT=3000
     volumes:
       - .env:/app/.env  # opcional: para .env em produção
