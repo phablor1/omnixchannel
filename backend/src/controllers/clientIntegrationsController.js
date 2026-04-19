@@ -82,7 +82,7 @@ function buildUnavailableReport() {
   };
 }
 
-function validateIntegrationInput(body = {}) {
+function validateIntegrationInput(body = {}, companyId = '') {
   const companyName = sanitizeText(body.companyName, 120);
   const contactEmail = sanitizeText(body.contactEmail, 120).toLowerCase();
   const n8nEndpoint = sanitizeText(body.n8nEndpoint, 255);
@@ -109,6 +109,7 @@ function validateIntegrationInput(body = {}) {
 
   return {
     payload: {
+      company_id: companyId,
       company_name: companyName,
       contact_email: contactEmail,
       n8n_endpoint: n8nEndpoint,
@@ -118,8 +119,8 @@ function validateIntegrationInput(body = {}) {
   };
 }
 
-async function resolveEvolutionContext(integrationId) {
-  const integration = await getClientIntegrationById(integrationId);
+async function resolveEvolutionContext(integrationId, companyId) {
+  const integration = await getClientIntegrationById(integrationId, companyId);
   if (!integration) {
     return { error: 'Integração não encontrada.' };
   }
@@ -136,12 +137,13 @@ async function resolveEvolutionContext(integrationId) {
   };
 }
 
+
 async function createIntegration(req, res) {
   if (!ensurePersistence(req, res)) {
     return;
   }
 
-  const validation = validateIntegrationInput(req.body);
+  const validation = validateIntegrationInput(req.body, req.session.companyId);
   if (validation.error) {
     return res.status(400).json({ success: false, message: validation.error });
   }
@@ -179,13 +181,13 @@ async function updateIntegration(req, res) {
     return res.status(400).json({ success: false, message: 'ID da integração é obrigatório.' });
   }
 
-  const validation = validateIntegrationInput(req.body);
+  const validation = validateIntegrationInput(req.body, req.session.companyId);
   if (validation.error) {
     return res.status(400).json({ success: false, message: validation.error });
   }
 
   try {
-    const data = await updateClientIntegrationById(integrationId, validation.payload);
+    const data = await updateClientIntegrationById(integrationId, req.session.companyId, validation.payload);
     await registerIntegrationEvent({
       clientIntegrationId: data.id,
       companyId: data.company_id,
@@ -218,7 +220,7 @@ async function deleteIntegration(req, res) {
   }
 
   try {
-    const data = await softDeleteClientIntegration(integrationId);
+    const data = await softDeleteClientIntegration(integrationId, req.session.companyId);
 
     await registerIntegrationEvent({
       clientIntegrationId: data.id,
@@ -246,7 +248,7 @@ async function getIntegrations(req, res) {
   }
 
   try {
-    const data = await listClientIntegrations();
+    const data = await listClientIntegrations(req.session.companyId);
     return res.json({ success: true, integrations: data.map(mapIntegration) });
   } catch (error) {
     console.error(`[${req.requestId}] Erro ao consultar integrações no Supabase:`, error);
@@ -264,8 +266,8 @@ async function getIntegrationsReport(req, res) {
 
   try {
     const [integrationsRaw, events] = await Promise.all([
-      listClientIntegrations(),
-      listIntegrationEvents()
+      listClientIntegrations(req.session.companyId),
+      listIntegrationEvents(req.session.companyId)
     ]);
 
     const usageByIntegration = buildUsageByIntegration(events);
@@ -331,7 +333,7 @@ async function saveEvolutionCredentials(req, res) {
   }
 
   try {
-    const integration = await getClientIntegrationById(integrationId);
+    const integration = await getClientIntegrationById(integrationId, req.session.companyId);
     if (!integration) {
       return res.status(404).json({ success: false, message: 'Integração não encontrada.' });
     }
@@ -361,7 +363,7 @@ async function listEvolutionInstances(req, res) {
   const integrationId = sanitizeText(req.params.integrationId || '', 80);
 
   try {
-    const context = await resolveEvolutionContext(integrationId);
+    const context = await resolveEvolutionContext(integrationId, req.session.companyId);
     if (context.error) {
       return res.status(404).json({ success: false, message: context.error });
     }
@@ -393,7 +395,7 @@ async function createEvolutionInstance(req, res) {
   }
 
   try {
-    const context = await resolveEvolutionContext(integrationId);
+    const context = await resolveEvolutionContext(integrationId, req.session.companyId);
     if (context.error) {
       return res.status(404).json({ success: false, message: context.error });
     }
@@ -434,7 +436,7 @@ async function updateEvolutionInstance(req, res) {
   }
 
   try {
-    const context = await resolveEvolutionContext(integrationId);
+    const context = await resolveEvolutionContext(integrationId, req.session.companyId);
     if (context.error) {
       return res.status(404).json({ success: false, message: context.error });
     }
@@ -474,7 +476,7 @@ async function deleteEvolutionInstance(req, res) {
   }
 
   try {
-    const context = await resolveEvolutionContext(integrationId);
+    const context = await resolveEvolutionContext(integrationId, req.session.companyId);
     if (context.error) {
       return res.status(404).json({ success: false, message: context.error });
     }
@@ -513,7 +515,7 @@ async function getEvolutionQrCode(req, res) {
   }
 
   try {
-    const context = await resolveEvolutionContext(integrationId);
+    const context = await resolveEvolutionContext(integrationId, req.session.companyId);
     if (context.error) {
       return res.status(404).json({ success: false, message: context.error });
     }
@@ -545,7 +547,7 @@ async function proxyEvolutionConfig(req, res) {
   }
 
   try {
-    const context = await resolveEvolutionContext(integrationId);
+    const context = await resolveEvolutionContext(integrationId, req.session.companyId);
     if (context.error) {
       return res.status(404).json({ success: false, message: context.error });
     }

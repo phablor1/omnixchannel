@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administração de Clientes | Omnix Channel</title>
+  <link rel="stylesheet" href="./assets/css/styles.css" />
+  <link rel="stylesheet" href="./assets/css/admin-clients.css" />
+</head>
+<body class="admin-page">
+  <main class="admin-shell">
+    <section class="admin-panel">
+      <header>
+        <h1>Administração de Clientes</h1>
+        <p>Cadastre, edite e bloqueie clientes multi-tenant com persistência.</p>
+      </header>
+
+      <form id="admin-login-form" class="card-grid">
+        <input name="username" placeholder="Usuário admin" required />
+        <input type="password" name="password" placeholder="Senha admin" required />
+        <button type="submit">Entrar</button>
+      </form>
+      <p id="admin-login-status" class="status"></p>
+
+      <section id="admin-content" class="hidden">
+        <div class="toolbar">
+          <h2>Clientes</h2>
+          <button id="refresh-clients" type="button">Atualizar</button>
+          <button id="logout-admin" type="button" class="secondary">Sair</button>
+        </div>
+
+        <form id="client-form" class="card-grid">
+          <input name="companyId" placeholder="companyId (empresa_acme)" required />
+          <input name="displayName" placeholder="Nome para exibição" required />
+          <input name="username" placeholder="Usuário do cliente" required />
+          <input type="password" name="password" placeholder="Senha (mín. 8)" required />
+          <button type="submit">Salvar cliente</button>
+        </form>
+        <p id="client-form-status" class="status"></p>
+
+        <div id="clients-list" class="clients-grid"></div>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="./assets/js/admin-clients.js"></script>
+</body>
+</html>

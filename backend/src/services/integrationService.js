@@ -27,84 +27,79 @@ async function createClientIntegration(payload) {
     .select('id, company_id, company_name, contact_email, n8n_endpoint, evolution_endpoint, security_level, status, created_at, updated_at')
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data;
 }
 
-async function updateClientIntegrationById(id, payload) {
+async function updateClientIntegrationById(id, companyId, payload) {
   const { data, error } = await supabase
     .from('client_integrations')
     .update(payload)
     .eq('id', id)
+    .eq('company_id', companyId)
     .is('deleted_at', null)
     .select('id, company_id, company_name, contact_email, n8n_endpoint, evolution_endpoint, security_level, status, created_at, updated_at')
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data;
 }
 
-async function softDeleteClientIntegration(id) {
+async function softDeleteClientIntegration(id, companyId) {
   const { data, error } = await supabase
     .from('client_integrations')
     .update({ deleted_at: new Date().toISOString(), status: 'deleted' })
     .eq('id', id)
+    .eq('company_id', companyId)
     .is('deleted_at', null)
     .select('id, company_id, company_name')
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data;
 }
 
-async function listClientIntegrations() {
-  const { data, error } = await supabase
+async function listClientIntegrations(companyId) {
+  const query = supabase
     .from('client_integrations')
     .select('id, company_id, company_name, contact_email, n8n_endpoint, evolution_endpoint, security_level, status, created_at, updated_at')
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    throw error;
-  }
+  if (companyId) query.eq('company_id', companyId);
 
+  const { data, error } = await query;
+  if (error) throw error;
   return data;
 }
 
-async function getClientIntegrationById(integrationId) {
-  const { data, error } = await supabase
+async function getClientIntegrationById(integrationId, companyId) {
+  const query = supabase
     .from('client_integrations')
     .select('id, company_id, company_name, contact_email, evolution_endpoint, status')
     .eq('id', integrationId)
-    .is('deleted_at', null)
-    .maybeSingle();
+    .is('deleted_at', null);
 
-  if (error) {
-    throw error;
-  }
+  if (companyId) query.eq('company_id', companyId);
 
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
   return data;
 }
 
-async function listIntegrationEvents() {
-  const { data, error } = await supabase
+async function listIntegrationEvents(companyId = null) {
+  const query = supabase
     .from('integration_events')
-    .select('client_integration_id, event_type, created_at')
+    .select('client_integration_id, event_type, created_at, payload')
     .order('created_at', { ascending: false });
 
-  if (error) {
-    throw error;
+  if (companyId) {
+    query.contains('payload', { companyId });
   }
 
+  const { data, error } = await query;
+
+  if (error) throw error;
   return data;
 }
 
@@ -131,10 +126,7 @@ async function upsertIntegrationSecret({ clientIntegrationId, provider, secretKe
     .select('id, client_integration_id, provider, metadata, updated_at')
     .single();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data;
 }
 
@@ -146,10 +138,7 @@ async function getIntegrationSecret(clientIntegrationId, provider) {
     .eq('provider', provider)
     .maybeSingle();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data;
 }
 

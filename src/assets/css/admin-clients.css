@@ -1,0 +1,26 @@
+:root {
+  --bg: #080d1a;
+  --card: #111a2f;
+  --line: rgba(255,255,255,.08);
+  --text: #eaf0ff;
+  --muted: #9fb1d6;
+  --primary: #4f8cff;
+  --danger: #ff5f7d;
+}
+body.admin-page { background: radial-gradient(circle at top, #13264b, var(--bg)); color: var(--text); min-height: 100vh; margin: 0; font-family: Inter, Arial, sans-serif; }
+.admin-shell { padding: 24px; display: flex; justify-content: center; }
+.admin-panel { width: min(1100px, 100%); background: rgba(10,18,35,.9); border: 1px solid var(--line); border-radius: 20px; padding: 24px; backdrop-filter: blur(10px); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 12px; margin: 16px 0; }
+input, button { border-radius: 10px; border: 1px solid var(--line); padding: 10px 12px; font: inherit; }
+input { background: #0d1730; color: var(--text); }
+button { background: var(--primary); color: white; font-weight: 600; cursor: pointer; }
+button.secondary { background: transparent; }
+.status { color: var(--muted); min-height: 20px; }
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.hidden { display: none; }
+.clients-grid { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 14px; }
+.client-card { border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 14px; }
+.client-card p { margin: 6px 0; color: var(--muted); }
+.client-actions { display: flex; gap: 8px; }
+.client-actions button.danger { background: var(--danger); }
+@media (max-width: 720px){ .admin-shell{padding: 12px;} .admin-panel{padding: 16px;} }

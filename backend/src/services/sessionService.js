@@ -15,11 +15,19 @@ class SessionService {
     }
   }
 
-  createSession(username) {
+  createSession(sessionData = {}) {
     this.cleanupExpiredSessions();
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = Date.now() + this.ttlMs;
-    this.sessions.set(token, { username, createdAt: Date.now(), expiresAt });
+    this.sessions.set(token, {
+      username: sessionData.username || '',
+      role: sessionData.role || 'client',
+      companyId: sessionData.companyId || null,
+      accountId: sessionData.accountId || null,
+      displayName: sessionData.displayName || null,
+      createdAt: Date.now(),
+      expiresAt
+    });
     return { token, expiresAt };
   }
 

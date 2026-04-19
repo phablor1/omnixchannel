@@ -126,3 +126,36 @@ for all using (false) with check (false);
 drop policy if exists deny_all_integration_events on public.integration_events;
 create policy deny_all_integration_events on public.integration_events
 for all using (false) with check (false);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'client_account_status') THEN
+    CREATE TYPE public.client_account_status AS ENUM ('active', 'blocked');
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.client_accounts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id text NOT NULL REFERENCES public.client_integrations(company_id) ON DELETE CASCADE,
+  username text NOT NULL CHECK (username ~ '^[a-z0-9._-]{3,40}$'),
+  display_name text NOT NULL,
+  password_hash text NOT NULL,
+  status public.client_account_status NOT NULL DEFAULT 'active',
+  last_login_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (company_id, username)
+);
+
+CREATE INDEX IF NOT EXISTS idx_client_accounts_company ON public.client_accounts (company_id);
+CREATE INDEX IF NOT EXISTS idx_client_accounts_status ON public.client_accounts (status);
+
+DROP TRIGGER IF EXISTS trg_client_accounts_updated_at ON public.client_accounts;
+CREATE TRIGGER trg_client_accounts_updated_at
+BEFORE UPDATE ON public.client_accounts
+FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+ALTER TABLE public.client_accounts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS deny_all_client_accounts ON public.client_accounts;
+CREATE POLICY deny_all_client_accounts ON public.client_accounts
+FOR ALL USING (false) WITH CHECK (false);
