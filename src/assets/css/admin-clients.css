@@ -24,3 +24,7 @@ button.secondary { background: transparent; }
 .client-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .client-actions button.danger { background: var(--danger); }
 @media (max-width: 720px){ .admin-shell{padding: 12px;} .admin-panel{padding: 16px;} }
+
+.back-link { color: #9ec1ff; text-decoration: none; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; display: inline-flex; align-items: center; }
+.back-link:hover { border-color: rgba(158,193,255,.8); }
+#admin-post-logout-actions { margin-top: 10px; }

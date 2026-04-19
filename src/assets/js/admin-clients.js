@@ -10,7 +10,8 @@ const el = {
   clientStatus: document.getElementById('client-form-status'),
   list: document.getElementById('clients-list'),
   refresh: document.getElementById('refresh-clients'),
-  logout: document.getElementById('logout-admin')
+  logout: document.getElementById('logout-admin'),
+  postLogoutActions: document.getElementById('admin-post-logout-actions')
 };
 
 function setStatus(node, msg, isError = false) {
@@ -20,9 +21,8 @@ function setStatus(node, msg, isError = false) {
 
 function setAuthVisibility(isAuthenticated) {
   el.loginForm.classList.toggle('hidden', isAuthenticated);
-  el.loginForm.hidden = isAuthenticated;
   el.content.classList.toggle('hidden', !isAuthenticated);
-  el.content.hidden = !isAuthenticated;
+  el.postLogoutActions.classList.toggle('hidden', isAuthenticated);
 }
 
 async function request(path, options = {}) {
@@ -116,8 +116,7 @@ el.logout.addEventListener('click', async () => {
   state.token = '';
   localStorage.removeItem('adminPortalToken');
   setAuthVisibility(false);
-  setStatus(el.loginStatus, 'Sessão encerrada. Redirecionando para acesso de clientes...');
-  window.location.href = './client-integrations.html';
+  setStatus(el.loginStatus, 'Sessão encerrada.');
 });
 
 el.list.addEventListener('click', async (event) => {
