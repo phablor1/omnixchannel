@@ -24,7 +24,8 @@ function buildClientAuthController(sessionService) {
     async login(req, res) {
       const scope = sanitizeText(req.body?.scope, 20).toLowerCase() || 'client';
       const username = sanitizeText(req.body?.username, 80).toLowerCase();
-      const password = sanitizeText(req.body?.password, 120);
+      const rawPassword = typeof req.body?.password === 'string' ? req.body.password : '';
+      const password = rawPassword.slice(0, 120);
       const companyId = sanitizeText(req.body?.companyId, 40).toLowerCase();
 
       if (scope === 'admin') {

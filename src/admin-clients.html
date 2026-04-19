@@ -20,6 +20,9 @@
         <input type="password" name="password" placeholder="Senha admin" required />
         <button type="submit">Entrar</button>
       </form>
+      <div id="admin-post-logout-actions" class="hidden">
+        <a href="./index.html" class="back-link">← Voltar ao início</a>
+      </div>
       <p id="admin-login-status" class="status"></p>
 
       <section id="admin-content" class="hidden">
@@ -27,6 +30,7 @@
           <h2>Clientes</h2>
           <button id="refresh-clients" type="button">Atualizar</button>
           <button id="logout-admin" type="button" class="secondary">Sair</button>
+          <a href="./index.html" class="back-link">Voltar ao início</a>
         </div>
 
         <form id="client-form" class="card-grid">
