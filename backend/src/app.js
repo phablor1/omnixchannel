@@ -16,6 +16,7 @@ const healthRoutes = require('./routes/healthRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const { buildClientAuthRoutes } = require('./routes/clientAuthRoutes');
 const { buildClientIntegrationsRoutes } = require('./routes/clientIntegrationsRoutes');
+const { buildAdminClientsRoutes } = require('./routes/adminClientsRoutes');
 
 function createApp() {
   validateRuntimeConfig();
@@ -23,7 +24,8 @@ function createApp() {
   const app = express();
   const lifecycleState = createLifecycleState();
   const sessionService = new SessionService(env.SESSION_TTL_MS);
-  const requireClientSession = buildRequireClientSession(sessionService);
+  const requireClientSession = buildRequireClientSession(sessionService, 'client');
+  const requireAdminSession = buildRequireClientSession(sessionService, 'admin');
   const clientAuthController = buildClientAuthController(sessionService);
 
   app.set('trust proxy', 1);
@@ -40,8 +42,9 @@ function createApp() {
 
   app.use(healthRoutes);
   app.use('/api/contact', contactRoutes);
-  app.use('/api/client-auth', buildClientAuthRoutes(clientAuthController, requireClientSession));
+  app.use('/api/client-auth', buildClientAuthRoutes(clientAuthController, buildRequireClientSession(sessionService)));
   app.use('/api/client-integrations', buildClientIntegrationsRoutes(requireClientSession));
+  app.use('/api/admin/clients', buildAdminClientsRoutes(requireAdminSession));
 
   app.use('*', notFoundHandler);
   app.use(errorHandler);

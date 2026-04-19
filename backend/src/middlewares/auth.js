@@ -7,7 +7,7 @@ function getTokenFromRequest(req) {
   return authHeader.slice(7).trim();
 }
 
-function buildRequireClientSession(sessionService) {
+function buildRequireClientSession(sessionService, expectedRole = null) {
   return (req, res, next) => {
     const token = getTokenFromRequest(req);
     const session = token ? sessionService.getSession(token) : null;
@@ -17,6 +17,10 @@ function buildRequireClientSession(sessionService) {
         success: false,
         message: 'Sessão inválida ou expirada. Faça login novamente.'
       });
+    }
+
+    if (expectedRole && session.role !== expectedRole) {
+      return res.status(403).json({ success: false, message: 'Perfil sem permissão para esta operação.' });
     }
 
     req.session = session;

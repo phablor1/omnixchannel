@@ -202,7 +202,9 @@ class IntegrationsPortalView {
     getLoginCredentials() {
         const formData = new FormData(this.loginForm);
         return {
-            username: (formData.get('username') || '').toString().trim(),
+            scope: 'client',
+            companyId: (formData.get('companyId') || '').toString().trim().toLowerCase(),
+            username: (formData.get('username') || '').toString().trim().toLowerCase(),
             password: (formData.get('password') || '').toString()
         };
     }
@@ -424,8 +426,8 @@ class IntegrationsPortalController {
         event.preventDefault();
         const credentials = this.view.getLoginCredentials();
 
-        if (!credentials.username || !credentials.password) {
-            this.view.setStatus(this.view.loginStatus, 'Informe usuário e senha para continuar.', 'error');
+        if (!credentials.companyId || !credentials.username || !credentials.password) {
+            this.view.setStatus(this.view.loginStatus, 'Informe tenant, usuário e senha para continuar.', 'error');
             return;
         }
 
