@@ -18,6 +18,13 @@ function setStatus(node, msg, isError = false) {
   node.style.color = isError ? '#ff9cb0' : '#9fb1d6';
 }
 
+function setAuthVisibility(isAuthenticated) {
+  el.loginForm.classList.toggle('hidden', isAuthenticated);
+  el.loginForm.hidden = isAuthenticated;
+  el.content.classList.toggle('hidden', !isAuthenticated);
+  el.content.hidden = !isAuthenticated;
+}
+
 async function request(path, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (state.token) headers.Authorization = `Bearer ${state.token}`;
@@ -41,6 +48,7 @@ function renderClients(clients = []) {
       <p><strong>Status:</strong> ${client.status}</p>
       <div class="client-actions">
         <button data-action="toggle" data-id="${client.id}" data-status="${client.status}">${client.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}</button>
+        <button data-action="password" data-id="${client.id}">Atualizar senha</button>
       </div>
     </article>
   `).join('');
@@ -68,8 +76,9 @@ el.loginForm.addEventListener('submit', async (event) => {
 
     state.token = data.token;
     localStorage.setItem('adminPortalToken', state.token);
-    el.content.classList.remove('hidden');
+    setAuthVisibility(true);
     setStatus(el.loginStatus, 'Sessão admin iniciada.');
+    el.loginForm.reset();
     await loadClients();
   } catch (error) {
     setStatus(el.loginStatus, error.message, true);
@@ -106,38 +115,69 @@ el.logout.addEventListener('click', async () => {
   try { await request('/api/client-auth/logout', { method: 'POST' }); } catch (_) {}
   state.token = '';
   localStorage.removeItem('adminPortalToken');
-  el.content.classList.add('hidden');
-  setStatus(el.loginStatus, 'Sessão encerrada.');
+  setAuthVisibility(false);
+  setStatus(el.loginStatus, 'Sessão encerrada. Redirecionando para acesso de clientes...');
+  window.location.href = './client-integrations.html';
 });
 
 el.list.addEventListener('click', async (event) => {
-  const button = event.target.closest('button[data-action="toggle"]');
+  const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const accountId = button.dataset.id;
-  const nextStatus = button.dataset.status === 'blocked' ? 'active' : 'blocked';
+  const action = button.dataset.action;
 
-  try {
-    await request(`/api/admin/clients/${accountId}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: nextStatus })
-    });
-    await loadClients();
-  } catch (error) {
-    setStatus(el.clientStatus, error.message, true);
+  if (action === 'toggle') {
+    const nextStatus = button.dataset.status === 'blocked' ? 'active' : 'blocked';
+
+    try {
+      await request(`/api/admin/clients/${accountId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      await loadClients();
+    } catch (error) {
+      setStatus(el.clientStatus, error.message, true);
+    }
+
+    return;
+  }
+
+  if (action === 'password') {
+    const newPassword = window.prompt('Digite a nova senha do cliente (mínimo 8 caracteres):', '');
+    if (newPassword === null) return;
+
+    if (newPassword.length < 8) {
+      setStatus(el.clientStatus, 'A nova senha deve ter no mínimo 8 caracteres.', true);
+      return;
+    }
+
+    try {
+      await request(`/api/admin/clients/${accountId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword })
+      });
+      setStatus(el.clientStatus, 'Senha atualizada com sucesso.');
+    } catch (error) {
+      setStatus(el.clientStatus, error.message, true);
+    }
   }
 });
+
+setAuthVisibility(Boolean(state.token));
 
 (async function restore() {
   if (!state.token) return;
   try {
     await request('/api/admin/clients');
-    el.content.classList.remove('hidden');
+    setAuthVisibility(true);
     setStatus(el.loginStatus, 'Sessão restaurada.');
     await loadClients();
   } catch (_error) {
     localStorage.removeItem('adminPortalToken');
     state.token = '';
+    setAuthVisibility(false);
   }
 })();
