@@ -10,12 +10,19 @@ const el = {
   clientStatus: document.getElementById('client-form-status'),
   list: document.getElementById('clients-list'),
   refresh: document.getElementById('refresh-clients'),
-  logout: document.getElementById('logout-admin')
+  logout: document.getElementById('logout-admin'),
+  postLogoutActions: document.getElementById('admin-post-logout-actions')
 };
 
 function setStatus(node, msg, isError = false) {
   node.textContent = msg;
   node.style.color = isError ? '#ff9cb0' : '#9fb1d6';
+}
+
+function setAuthVisibility(isAuthenticated) {
+  el.loginForm.classList.toggle('hidden', isAuthenticated);
+  el.content.classList.toggle('hidden', !isAuthenticated);
+  el.postLogoutActions.classList.toggle('hidden', isAuthenticated);
 }
 
 async function request(path, options = {}) {
@@ -68,7 +75,7 @@ el.loginForm.addEventListener('submit', async (event) => {
 
     state.token = data.token;
     localStorage.setItem('adminPortalToken', state.token);
-    el.content.classList.remove('hidden');
+    setAuthVisibility(true);
     setStatus(el.loginStatus, 'Sessão admin iniciada.');
     await loadClients();
   } catch (error) {
@@ -106,7 +113,7 @@ el.logout.addEventListener('click', async () => {
   try { await request('/api/client-auth/logout', { method: 'POST' }); } catch (_) {}
   state.token = '';
   localStorage.removeItem('adminPortalToken');
-  el.content.classList.add('hidden');
+  setAuthVisibility(false);
   setStatus(el.loginStatus, 'Sessão encerrada.');
 });
 
@@ -129,15 +136,18 @@ el.list.addEventListener('click', async (event) => {
   }
 });
 
+setAuthVisibility(Boolean(state.token));
+
 (async function restore() {
   if (!state.token) return;
   try {
     await request('/api/admin/clients');
-    el.content.classList.remove('hidden');
+    setAuthVisibility(true);
     setStatus(el.loginStatus, 'Sessão restaurada.');
     await loadClients();
   } catch (_error) {
     localStorage.removeItem('adminPortalToken');
     state.token = '';
+    setAuthVisibility(false);
   }
 })();

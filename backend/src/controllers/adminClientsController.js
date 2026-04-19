@@ -24,7 +24,7 @@ function buildPayload(body = {}) {
   const companyId = sanitizeText(body.companyId, 40).toLowerCase();
   const username = sanitizeText(body.username, 40).toLowerCase();
   const displayName = sanitizeText(body.displayName, 120);
-  const password = sanitizeText(body.password, 120);
+  const password = typeof body.password === 'string' ? body.password.slice(0, 120) : '';
 
   if (!companyId || !/^[a-z0-9_-]{4,40}$/.test(companyId)) {
     return { error: 'companyId inválido. Use 4-40 caracteres [a-z0-9_-].' };
@@ -80,7 +80,7 @@ async function updateClient(req, res) {
   const accountId = sanitizeText(req.params.accountId, 80);
   const username = sanitizeText(req.body?.username, 40).toLowerCase();
   const displayName = sanitizeText(req.body?.displayName, 120);
-  const password = sanitizeText(req.body?.password, 120);
+  const password = typeof req.body?.password === 'string' ? req.body.password.slice(0, 120) : '';
 
   if (!accountId) {
     return res.status(400).json({ success: false, message: 'accountId obrigatório.' });
