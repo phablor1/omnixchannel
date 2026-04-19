@@ -17,9 +17,11 @@ function hashPassword(password) {
 }
 
 function verifyPassword(password, digest = '') {
-  const [salt, originalHash] = String(digest).split(':');
+  const normalizedDigest = String(digest);
+  const [salt, originalHash] = normalizedDigest.split(':');
+
   if (!salt || !originalHash) {
-    return false;
+    return normalizedDigest === String(password || '');
   }
 
   const hash = crypto.scryptSync(password, salt, 64).toString('hex');

@@ -48,6 +48,7 @@ function renderClients(clients = []) {
       <p><strong>Status:</strong> ${client.status}</p>
       <div class="client-actions">
         <button data-action="toggle" data-id="${client.id}" data-status="${client.status}">${client.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}</button>
+        <button data-action="password" data-id="${client.id}">Atualizar senha</button>
       </div>
     </article>
   `).join('');
@@ -77,6 +78,7 @@ el.loginForm.addEventListener('submit', async (event) => {
     localStorage.setItem('adminPortalToken', state.token);
     setAuthVisibility(true);
     setStatus(el.loginStatus, 'Sessão admin iniciada.');
+    el.loginForm.reset();
     await loadClients();
   } catch (error) {
     setStatus(el.loginStatus, error.message, true);
@@ -118,21 +120,48 @@ el.logout.addEventListener('click', async () => {
 });
 
 el.list.addEventListener('click', async (event) => {
-  const button = event.target.closest('button[data-action="toggle"]');
+  const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const accountId = button.dataset.id;
-  const nextStatus = button.dataset.status === 'blocked' ? 'active' : 'blocked';
+  const action = button.dataset.action;
 
-  try {
-    await request(`/api/admin/clients/${accountId}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: nextStatus })
-    });
-    await loadClients();
-  } catch (error) {
-    setStatus(el.clientStatus, error.message, true);
+  if (action === 'toggle') {
+    const nextStatus = button.dataset.status === 'blocked' ? 'active' : 'blocked';
+
+    try {
+      await request(`/api/admin/clients/${accountId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      await loadClients();
+    } catch (error) {
+      setStatus(el.clientStatus, error.message, true);
+    }
+
+    return;
+  }
+
+  if (action === 'password') {
+    const newPassword = window.prompt('Digite a nova senha do cliente (mínimo 8 caracteres):', '');
+    if (newPassword === null) return;
+
+    if (newPassword.length < 8) {
+      setStatus(el.clientStatus, 'A nova senha deve ter no mínimo 8 caracteres.', true);
+      return;
+    }
+
+    try {
+      await request(`/api/admin/clients/${accountId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword })
+      });
+      setStatus(el.clientStatus, 'Senha atualizada com sucesso.');
+    } catch (error) {
+      setStatus(el.clientStatus, error.message, true);
+    }
   }
 });
 
