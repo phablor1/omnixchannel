@@ -66,6 +66,61 @@ function ensurePersistence(req, res) {
   return false;
 }
 
+
+function normalizeEvolutionInstances(body) {
+  if (!body) {
+    return [];
+  }
+
+  if (Array.isArray(body)) {
+    return body;
+  }
+
+  const possibleKeys = ['instances', 'instance', 'data', 'response', 'result'];
+  for (const key of possibleKeys) {
+    if (Array.isArray(body[key])) {
+      return body[key];
+    }
+  }
+
+  if (body.instance && typeof body.instance === 'object') {
+    return [body.instance];
+  }
+
+  return [];
+}
+
+async function requestEvolutionInstances(context) {
+  const attempts = [
+    { method: 'GET', path: '/instance/fetchInstances' },
+    { method: 'POST', path: '/instance/fetchInstances', payload: {} }
+  ];
+
+  let lastResponse = null;
+
+  for (const attempt of attempts) {
+    const response = await callEvolution({
+      endpoint: context.endpoint,
+      apiKey: context.apiKey,
+      method: attempt.method,
+      path: attempt.path,
+      payload: attempt.payload
+    });
+
+    lastResponse = response;
+
+    if (response.ok) {
+      return response;
+    }
+
+    if (response.status !== 404 && response.status !== 405) {
+      return response;
+    }
+  }
+
+  return lastResponse;
+}
+
 function buildUnavailableReport() {
   return {
     success: true,
@@ -368,16 +423,14 @@ async function listEvolutionInstances(req, res) {
       return res.status(404).json({ success: false, message: context.error });
     }
 
-    const evolutionResponse = await callEvolution({
-      endpoint: context.endpoint,
-      apiKey: context.apiKey,
-      method: 'GET',
-      path: '/instance/fetchInstances'
-    });
+    const evolutionResponse = await requestEvolutionInstances(context);
+    const instances = normalizeEvolutionInstances(evolutionResponse?.body);
 
     return res.status(evolutionResponse.status).json({
       success: evolutionResponse.ok,
       integrationId,
+      count: instances.length,
+      instances,
       data: evolutionResponse.body
     });
   } catch (error) {
